@@ -50,6 +50,32 @@
         
         .calc-btn { transition: transform 0.1s, background-color 0.2s; border-radius: 12px; }
         .calc-btn:active { transform: scale(0.92); }
+
+        /* Gaya kad "neo-brutalist" (border tebal + shadow offset padat) macam rujukan Bajetlah */
+        .neo-card {
+            border: 2.5px solid #1e293b;
+            box-shadow: 5px 5px 0px 0px #1e293b;
+            transition: box-shadow 0.15s ease, transform 0.15s ease;
+        }
+        .dark .neo-card {
+            border-color: #64748b;
+            box-shadow: 5px 5px 0px 0px #000;
+        }
+        .neo-fab {
+            border: 2.5px solid #1e293b;
+            box-shadow: 4px 4px 0px 0px #1e293b;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .dark .neo-fab {
+            border-color: #0f172a;
+            box-shadow: 4px 4px 0px 0px #000;
+        }
+        .neo-fab:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px #1e293b;
+        }
+        .chevron-rotate { transition: transform 0.25s ease; }
+        .chevron-rotate.collapsed { transform: rotate(-90deg); }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased flex justify-center transition-colors duration-300">
@@ -133,28 +159,59 @@
                 </div>
 
                 <!-- Graf Prestasi Mingguan (Belanja vs Pendapatan, data harian) -->
-                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-5 mb-6 border border-slate-100 dark:border-slate-700/50">
-                    <div class="flex justify-between items-center mb-1">
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">Prestasi Mingguan</h3>
-                            <p id="weekly-trend-range" class="text-[10px] text-slate-400 font-medium mt-0.5"></p>
+                <div class="neo-card bg-white dark:bg-slate-800 rounded-3xl p-5 mb-5">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+                                <i class="fas fa-chart-line text-[11px]"></i>
+                            </div>
+                            <h3 class="text-xs font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Prestasi Mingguan</h3>
+                            <button type="button" onclick="alert('Graf ini menunjukkan jumlah Belanja & Pendapatan harian anda untuk 7 hari (Ahd-Sab) bagi minggu yang dipilih.')" class="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-300 flex items-center justify-center">
+                                <i class="fas fa-info text-[8px]"></i>
+                            </button>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <button onclick="changeWeeklyTrend(-1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"><i class="fas fa-chevron-left text-[10px]"></i></button>
-                            <button onclick="changeWeeklyTrend(0)" class="px-2.5 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition text-[9px] font-bold uppercase tracking-wide">Kini</button>
-                            <button onclick="changeWeeklyTrend(1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"><i class="fas fa-chevron-right text-[10px]"></i></button>
-                        </div>
+                        <button type="button" id="weekly-trend-expand-btn" onclick="toggleWeeklyChartExpand()"
+                            class="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center press-scale">
+                            <i id="weekly-trend-expand-icon" class="fas fa-chevron-down text-[10px] transition-transform duration-300 ease-in-out"></i>
+                        </button>
                     </div>
 
-                    <div class="flex items-center gap-4 mt-3 mb-2">
-                        <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Belanja</span>
-                        <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Pendapatan</span>
-                        <span id="weekly-trend-net" class="ml-auto text-[10px] font-bold"></span>
-                    </div>
-
-                    <div class="relative h-40 w-full">
+                    <!-- Sparkline mini: sentiasa nampak, 1/4 tinggi asal (h-10) -->
+                    <div id="weeklyTrendChartWrapper" class="relative h-10 w-full mt-2 transition-all duration-300 ease-in-out">
                         <canvas id="weeklyTrendChart"></canvas>
                     </div>
+
+                    <!-- Butiran penuh: hanya nampak bila dikembangkan, animasi max-height + fade -->
+                    <div id="weekly-trend-details" class="overflow-hidden transition-all duration-300 ease-in-out" style="max-height:0px; opacity:0;">
+                        <div class="pt-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <p id="weekly-trend-range" class="text-[10px] text-slate-400 font-semibold"></p>
+                                <span id="weekly-trend-net" class="text-[10px] font-bold"></span>
+                            </div>
+                            <div class="flex items-center gap-4 mb-1">
+                                <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Belanja</span>
+                                <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Pendapatan</span>
+                            </div>
+
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-dashed border-slate-200 dark:border-slate-700">
+                                <button type="button" onclick="changeWeeklyTrend(-1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 active:scale-90 transition"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                                <button type="button" onclick="changeWeeklyTrend(0)" class="px-3 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 active:scale-90 transition text-[9px] font-bold uppercase tracking-wide">Minggu Kini</button>
+                                <button type="button" onclick="changeWeeklyTrend(1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 active:scale-90 transition"><i class="fas fa-chevron-right text-[10px]"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Butang "+" ciri akan datang: diasingkan, bukan lagi terapung atas kad graf -->
+                <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-6 flex items-center justify-between">
+                    <div class="min-w-0 pr-3">
+                        <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Jelajah Ciri Lain</p>
+                        <p class="text-[10px] text-slate-400 truncate">Import bank, sasaran simpanan &amp; banyak lagi</p>
+                    </div>
+                    <button type="button" onclick="openFutureModal()"
+                        class="neo-fab press-scale w-11 h-11 rounded-2xl bg-emerald-500 text-white text-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
 
                 <!-- Senarai Transaksi Berdasarkan Tarikh Dipilih -->
@@ -416,6 +473,69 @@
         </div>
 
         <!-- ========================================== -->
+        <!-- MODAL: CIRI AKAN DATANG (butang "+" kad graf) -->
+        <!-- ========================================== -->
+        <div id="future-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex-col justify-end transition-opacity duration-300 opacity-0">
+            <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-[2rem] p-6 slide-up-modal shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Ciri Akan Datang</h3>
+                    <button onclick="closeFutureModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mb-5">Beberapa ciri tambahan yang sedang dirancang untuk Poket Harian.</p>
+
+                <div class="space-y-3 max-h-[60vh] overflow-y-auto">
+                    <button onclick="notifyComingSoon('Import Penyata Bank')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-file-import"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Import Penyata Bank</p>
+                            <p class="text-[10px] text-slate-400">Muat naik CSV Maybank / TnG terus jadi rekod</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
+                    </button>
+
+                    <button onclick="notifyComingSoon('Sasaran Simpanan')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-piggy-bank"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Sasaran Simpanan</p>
+                            <p class="text-[10px] text-slate-400">Tetapkan matlamat & jejak kemajuan simpanan</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
+                    </button>
+
+                    <button onclick="notifyComingSoon('Peringatan Bil')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-bell"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Peringatan Bil Wajib</p>
+                            <p class="text-[10px] text-slate-400">Notifikasi automatik sebelum tarikh akhir bayaran</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
+                    </button>
+
+                    <button onclick="notifyComingSoon('Berbilang Akaun Bank')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <div class="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-building-columns"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Berbilang Akaun Bank</p>
+                            <p class="text-[10px] text-slate-400">Uruskan Maybank, TnG, CIMB dll berasingan</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
+                    </button>
+
+                    <button onclick="notifyComingSoon('Ramalan Belanja')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-wand-magic-sparkles"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Ramalan Belanja Bulan Depan</p>
+                            <p class="text-[10px] text-slate-400">Anggaran berdasarkan trend belanja lepas</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
         <!-- BOTTOM NAVIGATION                          -->
         <!-- ========================================== -->
         <nav class="fixed bottom-0 w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex justify-between items-center px-6 py-2 pb-safe z-40">
@@ -490,6 +610,7 @@
         // State Graf Prestasi Mingguan (Home)
         let weeklyTrendChart = null;
         let weeklyTrendDate = new Date(); // mana-mana tarikh dalam minggu yang dipaparkan
+        let isWeeklyChartExpanded = false; // false = ringkas (separuh saiz), true = kembang penuh
 
         // Apply Theme
         if (currentTheme === 'dark') document.documentElement.classList.add('dark');
@@ -727,6 +848,7 @@
             const isDark = document.documentElement.classList.contains('dark');
             const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)';
             const tickColor = isDark ? '#94a3b8' : '#64748b';
+            const compact = !isWeeklyChartExpanded; // true = paparan ringkas (separuh saiz)
 
             if (weeklyTrendChart) weeklyTrendChart.destroy();
             weeklyTrendChart = new Chart(document.getElementById('weeklyTrendChart').getContext('2d'), {
@@ -741,12 +863,12 @@
                             backgroundColor: 'rgba(244,63,94,0.08)',
                             fill: true,
                             tension: 0.35,
-                            pointRadius: 3,
+                            pointRadius: compact ? 0 : 3,
                             pointHoverRadius: 5,
                             pointBackgroundColor: '#f43f5e',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 1.5,
-                            borderWidth: 2.5
+                            borderWidth: compact ? 2 : 2.5
                         },
                         {
                             label: 'Pendapatan',
@@ -755,18 +877,19 @@
                             backgroundColor: 'rgba(16,185,129,0.08)',
                             fill: true,
                             tension: 0.35,
-                            pointRadius: 3,
+                            pointRadius: compact ? 0 : 3,
                             pointHoverRadius: 5,
                             pointBackgroundColor: '#10b981',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 1.5,
-                            borderWidth: 2.5
+                            borderWidth: compact ? 2 : 2.5
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: compact ? 0 : { top: 6 } },
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: false },
@@ -779,10 +902,13 @@
                     scales: {
                         x: {
                             grid: { display: false },
-                            ticks: { color: tickColor, font: { family: "'Poppins', sans-serif", size: 10, weight: '600' } }
+                            ticks: compact
+                                ? { display: false }
+                                : { color: tickColor, font: { family: "'Poppins', sans-serif", size: 10, weight: '600' } }
                         },
                         y: {
                             beginAtZero: true,
+                            display: !compact,
                             grid: { color: gridColor },
                             ticks: {
                                 color: tickColor,
@@ -796,8 +922,54 @@
             });
         }
 
+        // --- KEMBANG / RINGKASKAN CARTA PRESTASI MINGGUAN ---
+        function toggleWeeklyChartExpand() {
+            isWeeklyChartExpanded = !isWeeklyChartExpanded;
 
-        // --- MODAL LOGIC (ADD/EDIT) ---
+            const wrapper = document.getElementById('weeklyTrendChartWrapper');
+            wrapper.classList.toggle('h-10', !isWeeklyChartExpanded);
+            wrapper.classList.toggle('h-40', isWeeklyChartExpanded);
+
+            // Animasi ikon berputar (chevron)
+            const icon = document.getElementById('weekly-trend-expand-icon');
+            icon.classList.toggle('rotate-180', isWeeklyChartExpanded);
+
+            // Animasi kembang/kuncup butiran (tarikh, legenda, kawalan minggu)
+            const details = document.getElementById('weekly-trend-details');
+            if (isWeeklyChartExpanded) {
+                details.style.maxHeight = '220px';
+                details.style.opacity = '1';
+            } else {
+                details.style.maxHeight = '0px';
+                details.style.opacity = '0';
+            }
+
+            renderWeeklyTrend(); // lukis semula carta supaya paksi/titik sesuai dengan saiz baru
+        }
+
+
+        // --- MODAL: CIRI AKAN DATANG ---
+        const futureModal = document.getElementById('future-modal');
+        function openFutureModal() {
+            futureModal.classList.remove('hidden');
+            futureModal.classList.add('flex');
+            void futureModal.offsetWidth;
+            futureModal.classList.remove('opacity-0');
+        }
+        function closeFutureModal() {
+            futureModal.classList.add('opacity-0');
+            setTimeout(() => {
+                futureModal.classList.add('hidden');
+                futureModal.classList.remove('flex');
+            }, 300);
+        }
+        function notifyComingSoon(name) {
+            closeFutureModal();
+            setTimeout(() => alert(`"${name}" akan tersedia dalam kemas kini akan datang. Terima kasih atas cadangan anda!`), 320);
+        }
+
+        // (Nota: kad Prestasi Mingguan kini sentiasa tunjuk sparkline mini secara lalai;
+        // butang "Kembang"/"Kecilkan" pada kad itu sendiri yang kawal butiran penuh — lihat toggleWeeklyChartExpand())
         const modal = document.getElementById('add-modal');
         function openAddModal() { modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); }
         function closeAddModal() {
