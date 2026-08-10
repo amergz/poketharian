@@ -21,8 +21,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Chart.js -->
+    <!-- Chart.js + plugin peratusan pada slice -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     
     <style>
         /* CSS Animasi & Utilities */
@@ -99,24 +100,60 @@
                 
                 <!-- Kalendar Interaktif -->
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-5 mb-6 border border-slate-100 dark:border-slate-700/50">
-                    <div class="flex justify-between items-center mb-4 px-2">
-                        <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"><i class="fas fa-chevron-left text-xs"></i></button>
-                        <h3 id="calendar-month-year" class="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Bulan Tahun</h3>
-                        <button onclick="changeCalendarMonth(1)" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"><i class="fas fa-chevron-right text-xs"></i></button>
+                    
+                    <!-- Header Kalendar & Toggle Bulanan/Mingguan -->
+                    <div class="flex justify-between items-center mb-4 px-1">
+                        <button onclick="changeCalendarView(-1)" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"><i class="fas fa-chevron-left text-xs"></i></button>
+                        
+                        <!-- Butang Expand View -->
+                        <div onclick="toggleCalendarView()" class="flex items-center space-x-2 cursor-pointer bg-slate-50 dark:bg-slate-700/50 px-4 py-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                            <h3 id="calendar-month-year" class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Bulan Tahun</h3>
+                            <div class="w-5 h-5 flex items-center justify-center bg-indigo-100 dark:bg-indigo-500/30 text-indigo-600 dark:text-indigo-400 rounded-full">
+                                <i id="icon-toggle-calendar" class="fas fa-chevron-down text-[10px]"></i>
+                            </div>
+                        </div>
+
+                        <button onclick="changeCalendarView(1)" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"><i class="fas fa-chevron-right text-xs"></i></button>
                     </div>
                     
                     <div class="grid grid-cols-7 gap-1 text-center mb-3">
-                        <div class="text-[10px] font-bold text-slate-400">Ah</div>
+                        <div class="text-[10px] font-bold text-rose-400">Ah</div>
                         <div class="text-[10px] font-bold text-slate-400">Is</div>
                         <div class="text-[10px] font-bold text-slate-400">Se</div>
                         <div class="text-[10px] font-bold text-slate-400">Ra</div>
                         <div class="text-[10px] font-bold text-slate-400">Kh</div>
                         <div class="text-[10px] font-bold text-slate-400">Ju</div>
-                        <div class="text-[10px] font-bold text-slate-400">Sa</div>
+                        <div class="text-[10px] font-bold text-indigo-400">Sa</div>
                     </div>
                     
-                    <div id="calendar-grid" class="grid grid-cols-7 gap-y-2 gap-x-1 justify-items-center">
+                    <!-- Grid Kalendar -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-y-2 gap-x-1 justify-items-center transition-all duration-300">
                         <!-- JS Insert Grid Here -->
+                    </div>
+                </div>
+
+                <!-- Graf Prestasi Mingguan (Belanja vs Pendapatan, data harian) -->
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-5 mb-6 border border-slate-100 dark:border-slate-700/50">
+                    <div class="flex justify-between items-center mb-1">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">Prestasi Mingguan</h3>
+                            <p id="weekly-trend-range" class="text-[10px] text-slate-400 font-medium mt-0.5"></p>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="changeWeeklyTrend(-1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                            <button onclick="changeWeeklyTrend(0)" class="px-2.5 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition text-[9px] font-bold uppercase tracking-wide">Kini</button>
+                            <button onclick="changeWeeklyTrend(1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"><i class="fas fa-chevron-right text-[10px]"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-4 mt-3 mb-2">
+                        <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Belanja</span>
+                        <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Pendapatan</span>
+                        <span id="weekly-trend-net" class="ml-auto text-[10px] font-bold"></span>
+                    </div>
+
+                    <div class="relative h-40 w-full">
+                        <canvas id="weeklyTrendChart"></canvas>
                     </div>
                 </div>
 
@@ -180,14 +217,28 @@
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sleek relative min-h-[300px]">
-                    <div id="container-expense-chart" class="absolute inset-0 p-6 transition-opacity duration-300 opacity-100">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek overflow-hidden">
+                    <div id="container-expense-chart" class="p-6">
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-4">Kategori Belanja</h3>
-                        <div class="relative h-48 w-full"><canvas id="expensePieChart"></canvas></div>
+                        <div class="relative h-52 w-full">
+                            <canvas id="expensePieChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <p class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Jumlah</p>
+                                <p id="expense-chart-center" class="text-base font-extrabold text-rose-500">RM 0.00</p>
+                            </div>
+                        </div>
+                        <div id="expense-breakdown-list" class="space-y-2.5 mt-6"></div>
                     </div>
-                    <div id="container-income-chart" class="absolute inset-0 p-6 transition-opacity duration-300 opacity-0 pointer-events-none">
+                    <div id="container-income-chart" class="p-6 hidden">
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-4">Kategori Pendapatan</h3>
-                        <div class="relative h-48 w-full"><canvas id="incomePieChart"></canvas></div>
+                        <div class="relative h-52 w-full">
+                            <canvas id="incomePieChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <p class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Jumlah</p>
+                                <p id="income-chart-center" class="text-base font-extrabold text-emerald-500">RM 0.00</p>
+                            </div>
+                        </div>
+                        <div id="income-breakdown-list" class="space-y-2.5 mt-6"></div>
                     </div>
                 </div>
             </div>
@@ -201,7 +252,6 @@
             <div class="pt-10 pb-6 px-6">
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Menu & Profil</h2>
 
-                <!-- Status Kewangan Box -->
                 <div class="bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 rounded-3xl shadow-sleek mb-6">
                     <h3 class="text-xs font-medium text-slate-300 uppercase tracking-wider mb-4"><i class="fas fa-bullseye mr-2"></i>Status Bulan Ini</h3>
                     <div class="space-y-3">
@@ -220,16 +270,12 @@
                     </div>
                 </div>
 
-                <!-- Senarai Tetapan -->
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2">
-                    
-                    <!-- Bajet -->
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50">
                         <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wider">Bajet Bulanan (RM)</label>
                         <input type="number" id="setting-budget" class="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-200 border-transparent">
                     </div>
 
-                    <!-- Carry Forward -->
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
                         <div>
                             <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Carry Forward Surplus</p>
@@ -241,7 +287,6 @@
                         </label>
                     </div>
 
-                    <!-- Dark Mode -->
                     <div class="p-4 flex items-center justify-between">
                         <div class="flex items-center space-x-3">
                             <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300">
@@ -259,10 +304,9 @@
                     </div>
                 </div>
 
-                <!-- Pengurusan Data (Baru) -->
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2 mt-6">
                     <div class="p-4">
-                        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1 uppercase tracking-wider">Pengurusan Data (Tukar Telefon)</h3>
+                        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1 uppercase tracking-wider">Pengurusan Data</h3>
                         <p class="text-[10px] text-slate-400 mb-4">Simpan atau pindahkan data anda ke peranti lain dengan format .json.</p>
                         <div class="flex space-x-3">
                             <button onclick="exportData()" class="flex-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 py-3 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-colors">
@@ -413,6 +457,19 @@
     <!-- JAVASCRIPT LOGIC                           -->
     <!-- ========================================== -->
     <script>
+        // --- HELPER UNTUK WAKTU TEMPATAN (MALAYSIA) ---
+        function getLocalYYYYMMDD(d = new Date()) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function parseLocalDateStr(dateStr) {
+            const parts = dateStr.split('-');
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
         let transactions = JSON.parse(localStorage.getItem('poket_tx')) || [];
         let appPlan = JSON.parse(localStorage.getItem('poket_plan')) || { monthlyBudget: 1000, carryForward: true };
         let currentTheme = localStorage.getItem('poket_theme') || 'light';
@@ -423,10 +480,16 @@
         let myIncomePieChart = null;
         let currentEditId = null; 
 
-        // State untuk Kalendar
+        // State Kalendar (Lalai: false = Mingguan, true = Bulanan)
+        let isCalendarExpanded = false; 
         const monthNames = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
+        const dayShortNames = ["Ahd", "Isn", "Sel", "Rab", "Kha", "Jum", "Sab"];
         let calendarDateView = new Date(); 
-        let selectedCalendarDateStr = new Date().toISOString().split('T')[0];
+        let selectedCalendarDateStr = getLocalYYYYMMDD(); 
+
+        // State Graf Prestasi Mingguan (Home)
+        let weeklyTrendChart = null;
+        let weeklyTrendDate = new Date(); // mana-mana tarikh dalam minggu yang dipaparkan
 
         // Apply Theme
         if (currentTheme === 'dark') document.documentElement.classList.add('dark');
@@ -435,6 +498,7 @@
         // Setup Header Date
         const todayStrLocal = new Date().toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         document.getElementById('home-date').innerText = todayStrLocal;
+
 
         // --- DATA MANAGEMENT (BACKUP & RESTORE) ---
         function exportData() {
@@ -486,72 +550,117 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- CALENDAR LOGIC ---
-        function changeCalendarMonth(dir) {
-            calendarDateView.setMonth(calendarDateView.getMonth() + dir);
+
+        // --- CALENDAR LOGIC (EXPAND/COLLAPSE) ---
+        function toggleCalendarView() {
+            isCalendarExpanded = !isCalendarExpanded;
+            renderCalendar();
+        }
+
+        function changeCalendarView(dir) {
+            if (isCalendarExpanded) {
+                // View Bulanan -> Lompat 1 Bulan
+                calendarDateView.setMonth(calendarDateView.getMonth() + dir);
+            } else {
+                // View Mingguan -> Lompat 7 Hari (1 Minggu)
+                calendarDateView.setDate(calendarDateView.getDate() + (dir * 7));
+            }
             renderCalendar();
         }
 
         function selectCalendarDate(dateStr) {
             selectedCalendarDateStr = dateStr;
+            calendarDateView = parseLocalDateStr(dateStr); // Sentiasa fokus pada tarikh yang ditekan
             renderCalendar();
+        }
+
+        function generateCalendarDayHTML(dateStr, dayNum, todayStr) {
+            const hasExp = transactions.some(t => t.date === dateStr && t.type === 'expense');
+            const hasInc = transactions.some(t => t.date === dateStr && t.type === 'income');
+            
+            let dotHtml = '';
+            if(hasExp || hasInc) {
+                const dotColor = (hasInc && !hasExp) ? 'bg-emerald-400' : (hasExp && !hasInc ? 'bg-rose-400' : 'bg-indigo-400');
+                dotHtml = `<div class="w-1 h-1 rounded-full ${dotColor} absolute bottom-1"></div>`;
+            }
+            
+            let btnClass = "relative w-8 h-8 flex flex-col items-center justify-center rounded-full text-xs cursor-pointer transition-all";
+            let textClass = "text-slate-700 dark:text-slate-200 font-medium";
+            
+            if (dateStr === selectedCalendarDateStr) {
+                btnClass += " bg-indigo-600 shadow-md transform scale-110 z-10";
+                textClass = "text-white font-bold";
+                dotHtml = ''; // Sembunyi dot bila highlight
+            } else if (dateStr === todayStr) {
+                btnClass += " border border-indigo-500 bg-indigo-50 dark:bg-indigo-500/20";
+                textClass = "text-indigo-600 dark:text-indigo-400 font-bold";
+            } else {
+                btnClass += " hover:bg-slate-100 dark:hover:bg-slate-700";
+            }
+
+            return `<div onclick="selectCalendarDate('${dateStr}')" class="${btnClass}"><span class="${textClass} relative -top-[1px]">${dayNum}</span>${dotHtml}</div>`;
         }
 
         function renderCalendar() {
             const grid = document.getElementById('calendar-grid');
             const label = document.getElementById('calendar-month-year');
+            const toggleIcon = document.getElementById('icon-toggle-calendar');
             
-            const year = calendarDateView.getFullYear();
-            const month = calendarDateView.getMonth();
-            label.innerText = `${monthNames[month]} ${year}`;
-            
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const todayStr = new Date().toISOString().split('T')[0];
-            
+            const todayStr = getLocalYYYYMMDD();
             let html = '';
-            for(let i = 0; i < firstDay; i++) html += `<div></div>`; // Ruang kosong sebelum 1hb
-            
-            for(let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                
-                const hasExp = transactions.some(t => t.date === dateStr && t.type === 'expense');
-                const hasInc = transactions.some(t => t.date === dateStr && t.type === 'income');
-                
-                let dotHtml = '';
-                if(hasExp || hasInc) {
-                    const dotColor = (hasInc && !hasExp) ? 'bg-emerald-400' : (hasExp && !hasInc ? 'bg-rose-400' : 'bg-indigo-400');
-                    dotHtml = `<div class="w-1 h-1 rounded-full ${dotColor} absolute bottom-1"></div>`;
-                }
-                
-                let btnClass = "relative w-8 h-8 flex flex-col items-center justify-center rounded-full text-xs cursor-pointer transition-all";
-                let textClass = "text-slate-700 dark:text-slate-200 font-medium";
-                
-                if (dateStr === selectedCalendarDateStr) {
-                    btnClass += " bg-indigo-600 shadow-md transform scale-110 z-10";
-                    textClass = "text-white font-bold";
-                    dotHtml = ''; // Sembunyi titik jika sedang dipilih supaya tak serabut
-                } else if (dateStr === todayStr) {
-                    btnClass += " border border-indigo-500 bg-indigo-50 dark:bg-indigo-500/20";
-                    textClass = "text-indigo-600 dark:text-indigo-400 font-bold";
-                } else {
-                    btnClass += " hover:bg-slate-100 dark:hover:bg-slate-700";
-                }
 
-                html += `<div onclick="selectCalendarDate('${dateStr}')" class="${btnClass}"><span class="${textClass} relative -top-[1px]">${d}</span>${dotHtml}</div>`;
+            // Icon UI
+            if (isCalendarExpanded) {
+                toggleIcon.className = "fas fa-chevron-up text-[10px]";
+            } else {
+                toggleIcon.className = "fas fa-chevron-down text-[10px]";
+            }
+
+            if (isCalendarExpanded) {
+                // --- RENDER VIEW BULANAN ---
+                const year = calendarDateView.getFullYear();
+                const month = calendarDateView.getMonth();
+                label.innerText = `${monthNames[month]} ${year}`;
+                
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                for(let i = 0; i < firstDay; i++) html += `<div></div>`; 
+                for(let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    html += generateCalendarDayHTML(dateStr, d, todayStr);
+                }
+            } else {
+                // --- RENDER VIEW MINGGUAN ---
+                const currentDayOfWeek = calendarDateView.getDay();
+                const startDate = new Date(calendarDateView);
+                startDate.setDate(calendarDateView.getDate() - currentDayOfWeek); // Ambil hari Ahad minggu ini
+
+                label.innerText = `${monthNames[startDate.getMonth()]} ${startDate.getFullYear()}`;
+
+                for(let i = 0; i < 7; i++) {
+                    const loopDate = new Date(startDate);
+                    loopDate.setDate(startDate.getDate() + i);
+                    
+                    const lYear = loopDate.getFullYear();
+                    const lMonth = loopDate.getMonth();
+                    const lDate = loopDate.getDate();
+                    const dateStr = `${lYear}-${String(lMonth+1).padStart(2, '0')}-${String(lDate).padStart(2, '0')}`;
+                    
+                    html += generateCalendarDayHTML(dateStr, lDate, todayStr);
+                }
             }
             grid.innerHTML = html;
             
-            // Update label List Transaksi bawah kalendar
+            // Label Transaction bawah Kalendar
             const listLabel = document.getElementById('selected-date-label');
             if (selectedCalendarDateStr === todayStr) {
                 listLabel.innerText = "(Hari Ini)";
             } else {
-                const sel = new Date(selectedCalendarDateStr);
+                const sel = parseLocalDateStr(selectedCalendarDateStr);
                 listLabel.innerText = `(${sel.getDate()} ${monthNames[sel.getMonth()]})`;
             }
 
-            // Render list untuk hari dipilih
             renderHomeSelectedTransactions();
         }
 
@@ -566,6 +675,127 @@
             }
         }
 
+        // --- GRAF PRESTASI MINGGUAN (Home): Belanja vs Pendapatan, data harian ---
+        function changeWeeklyTrend(dir) {
+            if (dir === 0) {
+                weeklyTrendDate = new Date(); // Butang "Kini" -> kembali ke minggu semasa
+            } else {
+                weeklyTrendDate.setDate(weeklyTrendDate.getDate() + (dir * 7));
+            }
+            renderWeeklyTrend();
+        }
+
+        function renderWeeklyTrend() {
+            // Cari hari Ahad bagi minggu yang mengandungi weeklyTrendDate
+            const dow = weeklyTrendDate.getDay();
+            const start = new Date(weeklyTrendDate);
+            start.setDate(weeklyTrendDate.getDate() - dow);
+
+            const labels = [];
+            const expenseData = [];
+            const incomeData = [];
+            let weekExpense = 0, weekIncome = 0;
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(start);
+                d.setDate(start.getDate() + i);
+                const dateStr = getLocalYYYYMMDD(d);
+                labels.push(dayShortNames[i]);
+
+                let exp = 0, inc = 0;
+                transactions.filter(t => t.date === dateStr).forEach(t => {
+                    if (t.type === 'expense') exp += t.amount; else inc += t.amount;
+                });
+                expenseData.push(exp);
+                incomeData.push(inc);
+                weekExpense += exp;
+                weekIncome += inc;
+            }
+
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            const rangeLabel = start.getMonth() === end.getMonth()
+                ? `${start.getDate()} - ${end.getDate()} ${monthNames[start.getMonth()]} ${end.getFullYear()}`
+                : `${start.getDate()} ${monthNames[start.getMonth()]} - ${end.getDate()} ${monthNames[end.getMonth()]} ${end.getFullYear()}`;
+            document.getElementById('weekly-trend-range').innerText = rangeLabel;
+
+            const net = weekIncome - weekExpense;
+            const netEl = document.getElementById('weekly-trend-net');
+            netEl.innerText = (net >= 0 ? '+' : '-') + 'RM ' + Math.abs(net).toFixed(2) + ' bersih';
+            netEl.className = 'ml-auto text-[10px] font-bold ' + (net >= 0 ? 'text-emerald-500' : 'text-rose-500');
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)';
+            const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+            if (weeklyTrendChart) weeklyTrendChart.destroy();
+            weeklyTrendChart = new Chart(document.getElementById('weeklyTrendChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Belanja',
+                            data: expenseData,
+                            borderColor: '#f43f5e',
+                            backgroundColor: 'rgba(244,63,94,0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#f43f5e',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1.5,
+                            borderWidth: 2.5
+                        },
+                        {
+                            label: 'Pendapatan',
+                            data: incomeData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#10b981',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1.5,
+                            borderWidth: 2.5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.dataset.label}: RM ${ctx.parsed.y.toFixed(2)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: tickColor, font: { family: "'Poppins', sans-serif", size: 10, weight: '600' } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: tickColor,
+                                font: { size: 9 },
+                                callback: (v) => 'RM' + v,
+                                maxTicksLimit: 4
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
 
         // --- MODAL LOGIC (ADD/EDIT) ---
         const modal = document.getElementById('add-modal');
@@ -578,7 +808,7 @@
         function prepareNewTx() {
             currentEditId = null;
             document.getElementById('form-add').reset();
-            document.getElementById('input-date').value = selectedCalendarDateStr; // Auto select tarikh dari kalendar
+            document.getElementById('input-date').value = selectedCalendarDateStr; 
             document.getElementById('input-amount').value = '';
             calcClear();
             setInputType('expense');
@@ -631,13 +861,21 @@
         function calcAppend(val) { calcExpr = (calcExpr === "0" && val !== ".") ? val : calcExpr + val; document.getElementById('calc-display').innerText = calcExpr; }
         function calcClear() { calcExpr = "0"; document.getElementById('calc-display').innerText = calcExpr; }
         function calcDelete() { calcExpr = calcExpr.length > 1 ? calcExpr.slice(0, -1) : "0"; document.getElementById('calc-display').innerText = calcExpr; }
-        function calcApply() { try { let res = eval(calcExpr); document.getElementById('input-amount').value = (isNaN(res) || !isFinite(res)) ? "0.00" : parseFloat(res).toFixed(2); toggleCalculator(); } catch (e) { alert('Format tidak sah'); } }
+        function calcApply() {
+            if (!/^[0-9+\-*/.]+$/.test(calcExpr)) { alert('Format tidak sah'); return; }
+            try {
+                const res = Function('"use strict";return (' + calcExpr + ')')();
+                document.getElementById('input-amount').value = (typeof res !== 'number' || isNaN(res) || !isFinite(res)) ? "0.00" : parseFloat(res).toFixed(2);
+                toggleCalculator();
+            } catch (e) {
+                alert('Format tidak sah');
+            }
+        }
 
         // --- CORE LOGIC & RENDER ---
         function calculateFinance() {
-            const now = new Date();
-            const currentMonthStr = now.toISOString().substring(0, 7);
-            const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const todayStr = getLocalYYYYMMDD();
+            const currentMonthStr = todayStr.substring(0, 7);
             
             let surplus = 0;
             if (appPlan.carryForward) {
@@ -656,6 +894,7 @@
             });
 
             const totalFunds = appPlan.monthlyBudget + surplus + cInc;
+            const now = new Date();
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRem = daysInMonth - now.getDate() + 1;
             
@@ -684,8 +923,9 @@
             document.getElementById('plan-remaining').innerText = f.remaining.toFixed(2);
             document.getElementById('plan-surplus-amt').innerText = f.surplus.toFixed(2);
 
-            renderCalendar(); // Render Kalendar & Transaksi Pilihan di Home
-            renderFullHistory(); // Render tab sejarah penuh
+            renderCalendar(); 
+            renderWeeklyTrend();
+            renderFullHistory(); 
             if(document.getElementById('tab-stats').classList.contains('active')) renderStatistics();
         }
 
@@ -711,7 +951,7 @@
             }
 
             localStorage.setItem('poket_tx', JSON.stringify(transactions));
-            selectedCalendarDateStr = txData.date; // Auto-fokus kalendar ke tarikh baru
+            selectedCalendarDateStr = txData.date; 
             
             document.getElementById('input-text').value = '';
             document.getElementById('input-amount').value = '';
@@ -767,7 +1007,7 @@
         function renderFullHistory() {
             const listEl = document.getElementById('full-transaction-list');
             const sorted = [...transactions].sort((a,b) => new Date(b.date) - new Date(a.date));
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalYYYYMMDD();
             
             let filtered = sorted.filter(t => {
                 if(txFilter === 'daily') return t.date === today;
@@ -799,6 +1039,7 @@
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('poket_theme', currentTheme);
             updateThemeUI();
+            renderWeeklyTrend();
             if(document.getElementById('tab-stats').classList.contains('active')) renderStatistics();
         }
 
@@ -834,18 +1075,79 @@
             if (type === 'income') {
                 boxInc.className = "cursor-pointer bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sleek border-2 border-emerald-400 transition-all transform scale-105 text-center";
                 boxExp.className = "cursor-pointer bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sleek border border-transparent opacity-60 transition-all text-center";
-                chartExp.style.opacity = '0'; chartExp.style.pointerEvents = 'none';
-                chartInc.style.opacity = '1'; chartInc.style.pointerEvents = 'auto';
+                chartExp.classList.add('hidden');
+                chartInc.classList.remove('hidden');
             } else {
                 boxExp.className = "cursor-pointer bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sleek border-2 border-rose-400 transition-all transform scale-105 text-center";
                 boxInc.className = "cursor-pointer bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sleek border border-transparent opacity-60 transition-all text-center";
-                chartInc.style.opacity = '0'; chartInc.style.pointerEvents = 'none';
-                chartExp.style.opacity = '1'; chartExp.style.pointerEvents = 'auto';
+                chartInc.classList.add('hidden');
+                chartExp.classList.remove('hidden');
             }
         }
 
+        // Palet warna konsisten antara carta & senarai pecahan di bawahnya
+        const expenseColorPalette = ['#f43f5e', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#14b8a6', '#64748b'];
+        const incomeColorPalette = ['#10b981', '#0ea5e9', '#8b5cf6', '#f59e0b', '#f43f5e', '#14b8a6', '#64748b'];
+
+        function formatRMShort(v) {
+            return v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Bina senarai pecahan kategori (dot warna + nama + bar peratusan + amaun) di bawah carta
+        function renderCategoryBreakdown(containerId, categoryTotals, total, colorPalette, emptyIcon) {
+            const container = document.getElementById(containerId);
+            const entries = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+
+            if (entries.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6">
+                        <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full mx-auto flex items-center justify-center text-slate-400 mb-2">
+                            <i class="fas ${emptyIcon} text-lg"></i>
+                        </div>
+                        <p class="text-xs text-slate-400 font-medium">Tiada data untuk tempoh ini.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = entries.map(([cat, amt], i) => {
+                const pct = total > 0 ? (amt / total * 100) : 0;
+                const color = colorPalette[i % colorPalette.length];
+                return `
+                    <div class="flex items-center gap-3">
+                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${color}"></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${cat}</span>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap ml-2">RM ${formatRMShort(amt)}</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full" style="width:${pct}%; background:${color}"></div>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold w-10 text-right flex-shrink-0" style="color:${color}">${pct.toFixed(0)}%</span>
+                    </div>`;
+            }).join('');
+        }
+
+        // Konfigurasi label peratusan terus atas setiap slice (chartjs-plugin-datalabels)
+        function buildPercentageDatalabels() {
+            return {
+                color: '#fff',
+                font: { family: "'Poppins', sans-serif", size: 10, weight: 'bold' },
+                formatter: (value, context) => {
+                    const labels = context.chart.data.labels;
+                    if (labels[context.dataIndex] === 'Tiada Data') return '';
+                    const data = context.chart.data.datasets[0].data;
+                    const total = data.reduce((a, b) => a + b, 0);
+                    if (total === 0) return '';
+                    const pct = (value / total) * 100;
+                    return pct < 6 ? '' : pct.toFixed(0) + '%'; // sembunyi label pada slice terlalu kecil (elak bertindih)
+                }
+            };
+        }
+
         function renderStatistics() {
-            const filterStr = statFilter === 'monthly' ? new Date().toISOString().substring(0,7) : new Date().toISOString().substring(0,4);
+            const filterStr = statFilter === 'monthly' ? getLocalYYYYMMDD().substring(0,7) : getLocalYYYYMMDD().substring(0,4);
             let tInc = 0, tExp = 0, expCat = {}, incCat = {};
 
             transactions.filter(t => t.date.startsWith(filterStr)).forEach(t => {
@@ -855,20 +1157,59 @@
 
             document.getElementById('stat-income').innerText = tInc.toFixed(2);
             document.getElementById('stat-expense').innerText = tExp.toFixed(2);
+            document.getElementById('expense-chart-center').innerText = 'RM ' + formatRMShort(tExp);
+            document.getElementById('income-chart-center').innerText = 'RM ' + formatRMShort(tInc);
 
-            const isDark = document.documentElement.classList.contains('dark');
-            const legendColor = isDark ? '#94a3b8' : '#64748b';
-            const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, padding: 12, font: { family: "'Poppins', sans-serif", size: 10 }, color: legendColor } } }, cutout: '70%' };
+            const chartOpts = {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                if (ctx.label === 'Tiada Data') return ' Tiada data untuk tempoh ini';
+                                const data = ctx.chart.data.datasets[0].data;
+                                const total = data.reduce((a, b) => a + b, 0);
+                                const pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : 0;
+                                return ` ${ctx.label}: RM ${formatRMShort(ctx.parsed)} (${pct}%)`;
+                            }
+                        }
+                    },
+                    datalabels: buildPercentageDatalabels()
+                }
+            };
 
+            // ---- Carta Belanja ----
             const expLabels = Object.keys(expCat).length ? Object.keys(expCat) : ['Tiada Data'];
             const expData = Object.keys(expCat).length ? Object.values(expCat) : [1];
-            if(myPieChart) myPieChart.destroy();
-            myPieChart = new Chart(document.getElementById('expensePieChart').getContext('2d'), { type: 'doughnut', data: { labels: expLabels, datasets: [{ data: expData, backgroundColor: ['#f43f5e', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'], borderWidth: 0 }] }, options: chartOpts });
+            const expColors = Object.keys(expCat).length
+                ? Object.keys(expCat).map((_, i) => expenseColorPalette[i % expenseColorPalette.length])
+                : ['#e2e8f0'];
+            if (myPieChart) myPieChart.destroy();
+            myPieChart = new Chart(document.getElementById('expensePieChart').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: expLabels, datasets: [{ data: expData, backgroundColor: expColors, borderWidth: 0 }] },
+                options: chartOpts,
+                plugins: [ChartDataLabels]
+            });
+            renderCategoryBreakdown('expense-breakdown-list', expCat, tExp, expenseColorPalette, 'fa-receipt');
 
+            // ---- Carta Pendapatan ----
             const incLabels = Object.keys(incCat).length ? Object.keys(incCat) : ['Tiada Data'];
             const incData = Object.keys(incCat).length ? Object.values(incCat) : [1];
-            if(myIncomePieChart) myIncomePieChart.destroy();
-            myIncomePieChart = new Chart(document.getElementById('incomePieChart').getContext('2d'), { type: 'doughnut', data: { labels: incLabels, datasets: [{ data: incData, backgroundColor: ['#10b981', '#0ea5e9', '#8b5cf6'], borderWidth: 0 }] }, options: chartOpts });
+            const incColors = Object.keys(incCat).length
+                ? Object.keys(incCat).map((_, i) => incomeColorPalette[i % incomeColorPalette.length])
+                : ['#e2e8f0'];
+            if (myIncomePieChart) myIncomePieChart.destroy();
+            myIncomePieChart = new Chart(document.getElementById('incomePieChart').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: incLabels, datasets: [{ data: incData, backgroundColor: incColors, borderWidth: 0 }] },
+                options: chartOpts,
+                plugins: [ChartDataLabels]
+            });
+            renderCategoryBreakdown('income-breakdown-list', incCat, tInc, incomeColorPalette, 'fa-wallet');
         }
 
         // Init
