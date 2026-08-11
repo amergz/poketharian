@@ -76,6 +76,13 @@
         }
         .chevron-rotate { transition: transform 0.25s ease; }
         .chevron-rotate.collapsed { transform: rotate(-90deg); }
+
+        /* Animasi fade+slide untuk widget ciri tambahan yang baru diaktifkan di homepage */
+        @keyframes fadeInWidget {
+            0% { opacity: 0; transform: translateY(-8px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .fade-in-widget { animation: fadeInWidget 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased flex justify-center transition-colors duration-300">
@@ -152,9 +159,11 @@
                         <div class="text-[10px] font-bold text-indigo-400">Sa</div>
                     </div>
                     
-                    <!-- Grid Kalendar -->
-                    <div id="calendar-grid" class="grid grid-cols-7 gap-y-2 gap-x-1 justify-items-center transition-all duration-300">
-                        <!-- JS Insert Grid Here -->
+                    <!-- Grid Kalendar (dibalut wrapper supaya tinggi boleh dianimasikan) -->
+                    <div id="calendar-grid-wrapper" class="overflow-hidden transition-all duration-300 ease-in-out">
+                        <div id="calendar-grid" class="grid grid-cols-7 gap-y-2 gap-x-1 justify-items-center">
+                            <!-- JS Insert Grid Here -->
+                        </div>
                     </div>
                 </div>
 
@@ -202,17 +211,8 @@
                     </div>
                 </div>
 
-                <!-- Butang "+" ciri akan datang: diasingkan, bukan lagi terapung atas kad graf -->
-                <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-6 flex items-center justify-between">
-                    <div class="min-w-0 pr-3">
-                        <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Jelajah Ciri Lain</p>
-                        <p class="text-[10px] text-slate-400 truncate">Import bank, sasaran simpanan &amp; banyak lagi</p>
-                    </div>
-                    <button type="button" onclick="openFutureModal()"
-                        class="neo-fab press-scale w-11 h-11 rounded-2xl bg-emerald-500 text-white text-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
+                <!-- Widget ciri tambahan (hanya muncul bila diaktifkan dari tab Profil) -->
+                <div id="home-feature-widgets"></div>
 
                 <!-- Senarai Transaksi Berdasarkan Tarikh Dipilih -->
                 <div class="flex justify-between items-end mb-4">
@@ -361,6 +361,17 @@
                     </div>
                 </div>
 
+                <!-- Ciri Tambahan: hidupkan di sini, akan muncul sebagai widget di Homepage -->
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2 mt-6">
+                    <div class="p-4 pb-2">
+                        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1 uppercase tracking-wider">
+                            <i class="fas fa-layer-group mr-1"></i>Ciri Tambahan
+                        </h3>
+                        <p class="text-[10px] text-slate-400">Hidupkan mana-mana ciri di bawah untuk paparkannya sebagai widget di Homepage.</p>
+                    </div>
+                    <div id="feature-settings-list"></div>
+                </div>
+
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2 mt-6">
                     <div class="p-4">
                         <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1 uppercase tracking-wider">Pengurusan Data</h3>
@@ -473,69 +484,6 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- MODAL: CIRI AKAN DATANG (butang "+" kad graf) -->
-        <!-- ========================================== -->
-        <div id="future-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex-col justify-end transition-opacity duration-300 opacity-0">
-            <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-[2rem] p-6 slide-up-modal shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">Ciri Akan Datang</h3>
-                    <button onclick="closeFutureModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <p class="text-xs text-slate-400 mb-5">Beberapa ciri tambahan yang sedang dirancang untuk Poket Harian.</p>
-
-                <div class="space-y-3 max-h-[60vh] overflow-y-auto">
-                    <button onclick="notifyComingSoon('Import Penyata Bank')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-file-import"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Import Penyata Bank</p>
-                            <p class="text-[10px] text-slate-400">Muat naik CSV Maybank / TnG terus jadi rekod</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
-                    </button>
-
-                    <button onclick="notifyComingSoon('Sasaran Simpanan')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-piggy-bank"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Sasaran Simpanan</p>
-                            <p class="text-[10px] text-slate-400">Tetapkan matlamat & jejak kemajuan simpanan</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
-                    </button>
-
-                    <button onclick="notifyComingSoon('Peringatan Bil')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-bell"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Peringatan Bil Wajib</p>
-                            <p class="text-[10px] text-slate-400">Notifikasi automatik sebelum tarikh akhir bayaran</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
-                    </button>
-
-                    <button onclick="notifyComingSoon('Berbilang Akaun Bank')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <div class="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-building-columns"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Berbilang Akaun Bank</p>
-                            <p class="text-[10px] text-slate-400">Uruskan Maybank, TnG, CIMB dll berasingan</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
-                    </button>
-
-                    <button onclick="notifyComingSoon('Ramalan Belanja')" class="w-full flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-wand-magic-sparkles"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Ramalan Belanja Bulan Depan</p>
-                            <p class="text-[10px] text-slate-400">Anggaran berdasarkan trend belanja lepas</p>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
         <!-- BOTTOM NAVIGATION                          -->
         <!-- ========================================== -->
         <nav class="fixed bottom-0 w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex justify-between items-center px-6 py-2 pb-safe z-40">
@@ -600,8 +548,12 @@
         let myIncomePieChart = null;
         let currentEditId = null; 
 
+        // Pilihan "custom" saiz kad yang disimpan pengguna (kekal walau reload/tutup app)
+        let uiPrefs = JSON.parse(localStorage.getItem('poket_ui_prefs')) || { calendarExpanded: false, weeklyTrendExpanded: false };
+        function saveUiPrefs() { localStorage.setItem('poket_ui_prefs', JSON.stringify(uiPrefs)); }
+
         // State Kalendar (Lalai: false = Mingguan, true = Bulanan)
-        let isCalendarExpanded = false; 
+        let isCalendarExpanded = uiPrefs.calendarExpanded;
         const monthNames = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
         const dayShortNames = ["Ahd", "Isn", "Sel", "Rab", "Kha", "Jum", "Sab"];
         let calendarDateView = new Date(); 
@@ -610,7 +562,7 @@
         // State Graf Prestasi Mingguan (Home)
         let weeklyTrendChart = null;
         let weeklyTrendDate = new Date(); // mana-mana tarikh dalam minggu yang dipaparkan
-        let isWeeklyChartExpanded = false; // false = ringkas (separuh saiz), true = kembang penuh
+        let isWeeklyChartExpanded = uiPrefs.weeklyTrendExpanded; // false = mini (1/4 saiz), true = penuh
 
         // Apply Theme
         if (currentTheme === 'dark') document.documentElement.classList.add('dark');
@@ -668,6 +620,7 @@
             document.getElementById(`nav-${tabId}`).classList.add('active');
             
             if(tabId === 'stats') renderStatistics();
+            if(tabId === 'menu') renderFeatureSettingsList();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -675,6 +628,8 @@
         // --- CALENDAR LOGIC (EXPAND/COLLAPSE) ---
         function toggleCalendarView() {
             isCalendarExpanded = !isCalendarExpanded;
+            uiPrefs.calendarExpanded = isCalendarExpanded;
+            saveUiPrefs();
             renderCalendar();
         }
 
@@ -772,7 +727,13 @@
                 }
             }
             grid.innerHTML = html;
-            
+
+            // Animasikan tinggi wrapper (elak "lompat" tiba-tiba bila tukar Mingguan/Bulanan)
+            const gridWrapper = document.getElementById('calendar-grid-wrapper');
+            requestAnimationFrame(() => {
+                gridWrapper.style.maxHeight = grid.scrollHeight + 'px';
+            });
+
             // Label Transaction bawah Kalendar
             const listLabel = document.getElementById('selected-date-label');
             if (selectedCalendarDateStr === todayStr) {
@@ -923,49 +884,102 @@
         }
 
         // --- KEMBANG / RINGKASKAN CARTA PRESTASI MINGGUAN ---
-        function toggleWeeklyChartExpand() {
-            isWeeklyChartExpanded = !isWeeklyChartExpanded;
-
+        function applyWeeklyTrendUiState() {
             const wrapper = document.getElementById('weeklyTrendChartWrapper');
             wrapper.classList.toggle('h-10', !isWeeklyChartExpanded);
             wrapper.classList.toggle('h-40', isWeeklyChartExpanded);
 
-            // Animasi ikon berputar (chevron)
-            const icon = document.getElementById('weekly-trend-expand-icon');
-            icon.classList.toggle('rotate-180', isWeeklyChartExpanded);
+            document.getElementById('weekly-trend-expand-icon').classList.toggle('rotate-180', isWeeklyChartExpanded);
 
-            // Animasi kembang/kuncup butiran (tarikh, legenda, kawalan minggu)
             const details = document.getElementById('weekly-trend-details');
-            if (isWeeklyChartExpanded) {
-                details.style.maxHeight = '220px';
-                details.style.opacity = '1';
-            } else {
-                details.style.maxHeight = '0px';
-                details.style.opacity = '0';
-            }
+            details.style.maxHeight = isWeeklyChartExpanded ? '220px' : '0px';
+            details.style.opacity = isWeeklyChartExpanded ? '1' : '0';
+        }
 
+        function toggleWeeklyChartExpand() {
+            isWeeklyChartExpanded = !isWeeklyChartExpanded;
+            uiPrefs.weeklyTrendExpanded = isWeeklyChartExpanded;
+            saveUiPrefs();
+
+            applyWeeklyTrendUiState();
             renderWeeklyTrend(); // lukis semula carta supaya paksi/titik sesuai dengan saiz baru
         }
 
 
-        // --- MODAL: CIRI AKAN DATANG ---
-        const futureModal = document.getElementById('future-modal');
-        function openFutureModal() {
-            futureModal.classList.remove('hidden');
-            futureModal.classList.add('flex');
-            void futureModal.offsetWidth;
-            futureModal.classList.remove('opacity-0');
+        // --- CIRI TAMBAHAN (diaktifkan dari tab Profil, dipaparkan di Homepage) ---
+        const featureCatalog = [
+            { id: 'import-bank', name: 'Import Penyata Bank', desc: 'Muat naik CSV Maybank / TnG terus jadi rekod', icon: 'fa-file-import', iconWrap: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' },
+            { id: 'savings-goal', name: 'Sasaran Simpanan', desc: 'Tetapkan matlamat & jejak kemajuan simpanan', icon: 'fa-piggy-bank', iconWrap: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
+            { id: 'bill-reminder', name: 'Peringatan Bil Wajib', desc: 'Notifikasi automatik sebelum tarikh akhir bayaran', icon: 'fa-bell', iconWrap: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
+            { id: 'multi-account', name: 'Berbilang Akaun Bank', desc: 'Uruskan Maybank, TnG, CIMB dll berasingan', icon: 'fa-building-columns', iconWrap: 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400' },
+            { id: 'forecast', name: 'Ramalan Belanja Bulan Depan', desc: 'Anggaran berdasarkan trend belanja lepas', icon: 'fa-wand-magic-sparkles', iconWrap: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' }
+        ];
+
+        let enabledFeatures = JSON.parse(localStorage.getItem('poket_enabled_features')) || [];
+        function saveEnabledFeatures() { localStorage.setItem('poket_enabled_features', JSON.stringify(enabledFeatures)); }
+
+        // Senarai toggle dalam tab Profil
+        function renderFeatureSettingsList() {
+            const container = document.getElementById('feature-settings-list');
+            if (!container) return;
+            container.innerHTML = featureCatalog.map(f => {
+                const isOn = enabledFeatures.includes(f.id);
+                return `
+                    <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between last:border-b-0">
+                        <div class="flex items-center gap-3 min-w-0 pr-3">
+                            <div class="w-9 h-9 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon} text-xs"></i></div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${f.name}</p>
+                                <p class="text-[10px] text-slate-400 truncate">${f.desc}</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" data-feature-id="${f.id}" class="feature-toggle sr-only peer" ${isOn ? 'checked' : ''}>
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>`;
+            }).join('');
+
+            container.querySelectorAll('.feature-toggle').forEach(toggle => {
+                toggle.addEventListener('change', (e) => {
+                    const id = e.target.dataset.featureId;
+                    if (e.target.checked) {
+                        if (!enabledFeatures.includes(id)) enabledFeatures.push(id);
+                    } else {
+                        enabledFeatures = enabledFeatures.filter(fid => fid !== id);
+                    }
+                    saveEnabledFeatures();
+                    renderHomeFeatureWidgets();
+                });
+            });
         }
-        function closeFutureModal() {
-            futureModal.classList.add('opacity-0');
-            setTimeout(() => {
-                futureModal.classList.add('hidden');
-                futureModal.classList.remove('flex');
-            }, 300);
+
+        // Widget placeholder di Homepage — hanya muncul untuk ciri yang diaktifkan
+        function renderHomeFeatureWidgets() {
+            const container = document.getElementById('home-feature-widgets');
+            if (!container) return;
+            const active = featureCatalog.filter(f => enabledFeatures.includes(f.id));
+
+            if (active.length === 0) { container.innerHTML = ''; return; }
+
+            container.innerHTML = active.map(f => `
+                <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-3 fade-in-widget">
+                    <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
+                        <p class="text-[10px] text-slate-400">Ciri ini sedang dibangunkan. Boleh matikan dari tab Profil.</p>
+                    </div>
+                    <button type="button" onclick="disableFeatureFromHome('${f.id}')" class="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center">
+                        <i class="fas fa-times text-[10px]"></i>
+                    </button>
+                </div>`).join('');
         }
-        function notifyComingSoon(name) {
-            closeFutureModal();
-            setTimeout(() => alert(`"${name}" akan tersedia dalam kemas kini akan datang. Terima kasih atas cadangan anda!`), 320);
+
+        function disableFeatureFromHome(id) {
+            enabledFeatures = enabledFeatures.filter(fid => fid !== id);
+            saveEnabledFeatures();
+            renderHomeFeatureWidgets();
+            renderFeatureSettingsList(); // sync suis dalam tab Profil sekiranya sedang dibuka
         }
 
         // (Nota: kad Prestasi Mingguan kini sentiasa tunjuk sparkline mini secara lalai;
@@ -1097,6 +1111,7 @@
 
             renderCalendar(); 
             renderWeeklyTrend();
+            renderHomeFeatureWidgets();
             renderFullHistory(); 
             if(document.getElementById('tab-stats').classList.contains('active')) renderStatistics();
         }
@@ -1385,6 +1400,7 @@
         }
 
         // Init
+        applyWeeklyTrendUiState(); // guna semula saiz kad yang disimpan pengguna (sebelum carta pertama dilukis)
         refreshData();
     </script>
 </body>
