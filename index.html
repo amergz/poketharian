@@ -614,9 +614,9 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- BUTANG "+" TERAPUNG (diasingkan dari nav)  -->
+        <!-- BUTANG "+" TERAPUNG (diasingkan dari nav, hanya di tab Home) -->
         <!-- ========================================== -->
-        <button onclick="prepareNewTx()"
+        <button id="floating-add-btn" onclick="prepareNewTx()"
             class="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-white text-2xl shadow-glow transform transition hover:scale-105 active:scale-95 z-40">
             <i class="fas fa-plus"></i>
         </button>
@@ -747,6 +747,9 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById(`nav-${tabId}`).classList.add('active');
             
+            // Butang "+" terapung hanya dipaparkan di tab Home
+            document.getElementById('floating-add-btn').classList.toggle('hidden', tabId !== 'home');
+
             if(tabId === 'stats') renderStatistics();
             if(tabId === 'savings') renderSavingsAccounts();
             if(tabId === 'menu') renderFeatureSettingsList();
