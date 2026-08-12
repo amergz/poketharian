@@ -4,6 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Poket Harian - Sleek Edition</title>
+
+    <!-- ============================================ -->
+    <!-- PWA: bolehkan "Add to Home Screen" / Install  -->
+    <!-- ============================================ -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+
+    <!-- Android (Chrome) -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+    <!-- iOS (Safari "Add to Home Screen") -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Poket Harian">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <!-- Windows / lain-lain -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Poket Harian">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -303,11 +324,53 @@
 
 
         <!-- ========================================== -->
+        <!-- TAB 4: AKAUN SIMPANAN                      -->
+        <!-- ========================================== -->
+        <div id="tab-savings" class="tab-content w-full">
+            <div class="pt-10 pb-6 px-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Akaun Simpanan</h2>
+                    <button onclick="openSavingsModal()" class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none active:scale-90 transition">
+                        <i class="fas fa-plus text-sm"></i>
+                    </button>
+                </div>
+
+                <ul id="savings-account-list" class="space-y-3"></ul>
+            </div>
+
+            <!-- Jumlah keseluruhan semua akaun simpanan -->
+            <div class="px-6 pb-6">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-3xl shadow-sleek flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider text-emerald-100 font-semibold">Jumlah Keseluruhan Simpanan</p>
+                        <p class="text-2xl font-extrabold mt-1">RM <span id="savings-total-amount">0.00</span></p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-piggy-bank text-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ========================================== -->
         <!-- TAB 4: MENU / TETAPAN / PLAN               -->
         <!-- ========================================== -->
         <div id="tab-menu" class="tab-content w-full">
             <div class="pt-10 pb-6 px-6">
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Menu & Profil</h2>
+
+                <!-- Pasang sebagai App (Android/Chrome) — hanya muncul bila browser sokong & belum dipasang -->
+                <div id="install-app-card" class="hidden bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-5 rounded-3xl shadow-sleek mb-6 items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-mobile-screen-button text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold">Pasang Poket Harian</p>
+                        <p class="text-[10px] text-indigo-100 mt-0.5">Tambah ke skrin utama & buka macam app biasa</p>
+                    </div>
+                    <button onclick="installPwa()" class="bg-white text-indigo-600 text-xs font-bold px-4 py-2.5 rounded-xl flex-shrink-0">Pasang</button>
+                </div>
 
                 <div class="bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 rounded-3xl shadow-sleek mb-6">
                     <h3 class="text-xs font-medium text-slate-300 uppercase tracking-wider mb-4"><i class="fas fa-bullseye mr-2"></i>Status Bulan Ini</h3>
@@ -484,39 +547,104 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- BOTTOM NAVIGATION                          -->
+        <!-- MODAL: TAMBAH/EDIT AKAUN SIMPANAN          -->
         <!-- ========================================== -->
-        <nav class="fixed bottom-0 w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex justify-between items-center px-6 py-2 pb-safe z-40">
-            <!-- Left -->
-            <div class="flex space-x-6">
-                <button onclick="switchTab('home')" id="nav-home" class="nav-item active flex flex-col items-center w-12 py-2">
-                    <i class="fas fa-home text-[20px] mb-1"></i>
-                    <span class="text-[9px] font-semibold">Home</span>
-                </button>
-                <button onclick="switchTab('history')" id="nav-history" class="nav-item flex flex-col items-center w-12 py-2">
-                    <i class="fas fa-receipt text-[20px] mb-1"></i>
-                    <span class="text-[9px] font-semibold">Sejarah</span>
-                </button>
-            </div>
-            
-            <!-- Center FAB -->
-            <div class="relative -top-6">
-                <button onclick="prepareNewTx()" class="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-white text-2xl shadow-glow transform transition hover:scale-105 active:scale-95">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
+        <div id="savings-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex-col justify-end transition-opacity duration-300 opacity-0">
+            <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-[2rem] p-6 slide-up-modal shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
 
-            <!-- Right -->
-            <div class="flex space-x-6">
-                <button onclick="switchTab('stats')" id="nav-stats" class="nav-item flex flex-col items-center w-12 py-2">
-                    <i class="fas fa-chart-pie text-[20px] mb-1"></i>
-                    <span class="text-[9px] font-semibold">Statistik</span>
-                </button>
-                <button onclick="switchTab('menu')" id="nav-menu" class="nav-item flex flex-col items-center w-12 py-2">
-                    <i class="fas fa-user text-[20px] mb-1"></i>
-                    <span class="text-[9px] font-semibold">Profil</span>
-                </button>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="savings-modal-title" class="text-lg font-bold text-slate-800 dark:text-white">Tambah Akaun Simpanan</h3>
+                    <button onclick="closeSavingsModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Nama Akaun</label>
+                        <input type="text" id="savings-input-name" placeholder="Cth: Simpanan Kecemasan" required autocomplete="off" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none font-medium">
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800 relative cursor-pointer" onclick="toggleSavingsCalculator()">
+                        <div class="flex justify-between items-center px-2">
+                            <label class="text-[10px] uppercase font-bold text-slate-400">Jumlah Semasa (RM)</label>
+                            <i class="fas fa-calculator text-indigo-400 text-xs"></i>
+                        </div>
+                        <div class="flex items-center px-2 pt-1">
+                            <span class="text-slate-400 font-bold mr-2">RM</span>
+                            <input type="text" id="savings-input-amount" placeholder="0.00" readonly required class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-extrabold text-2xl cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Kalkulator (khusus untuk borang Akaun Simpanan, berasingan dari kalkulator borang Rekod) -->
+                    <div id="savings-calculator-box" class="hidden mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-sleek">
+                        <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl mb-3 text-right font-mono text-2xl font-bold text-indigo-600 dark:text-indigo-400 overflow-x-auto tracking-widest" id="savings-calc-display">0</div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="calcSavingsAppend('7')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">7</button>
+                            <button type="button" onclick="calcSavingsAppend('8')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">8</button>
+                            <button type="button" onclick="calcSavingsAppend('9')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">9</button>
+                            <button type="button" onclick="calcSavingsAppend('/')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">÷</button>
+
+                            <button type="button" onclick="calcSavingsAppend('4')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">4</button>
+                            <button type="button" onclick="calcSavingsAppend('5')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">5</button>
+                            <button type="button" onclick="calcSavingsAppend('6')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">6</button>
+                            <button type="button" onclick="calcSavingsAppend('*')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">×</button>
+
+                            <button type="button" onclick="calcSavingsAppend('1')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">1</button>
+                            <button type="button" onclick="calcSavingsAppend('2')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">2</button>
+                            <button type="button" onclick="calcSavingsAppend('3')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">3</button>
+                            <button type="button" onclick="calcSavingsAppend('-')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">-</button>
+
+                            <button type="button" onclick="calcSavingsClear()" class="calc-btn py-3 bg-rose-50 dark:bg-rose-500/20 text-rose-500 font-bold text-lg">C</button>
+                            <button type="button" onclick="calcSavingsAppend('0')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">0</button>
+                            <button type="button" onclick="calcSavingsAppend('.')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">.</button>
+                            <button type="button" onclick="calcSavingsAppend('+')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">+</button>
+                        </div>
+                        <div class="flex space-x-2 mt-2">
+                            <button type="button" onclick="calcSavingsDelete()" class="w-1/4 py-3 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 font-bold rounded-xl text-xs"><i class="fas fa-backspace"></i></button>
+                            <button type="button" onclick="calcSavingsApply()" class="w-3/4 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md">Guna Nilai</button>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="saveSavingsAccount()" id="savings-submit-btn" class="w-full bg-slate-800 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-sleek hover:bg-slate-900 transition-all mt-4 text-sm tracking-wide">
+                        SIMPAN AKAUN
+                    </button>
+                </div>
             </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- BUTANG "+" TERAPUNG (diasingkan dari nav)  -->
+        <!-- ========================================== -->
+        <button onclick="prepareNewTx()"
+            class="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-white text-2xl shadow-glow transform transition hover:scale-105 active:scale-95 z-40">
+            <i class="fas fa-plus"></i>
+        </button>
+
+        <!-- ========================================== -->
+        <!-- BOTTOM NAVIGATION (5 tab sama rata)        -->
+        <!-- ========================================== -->
+        <nav class="fixed bottom-0 w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex justify-between items-center px-4 py-2 pb-safe z-40">
+            <button onclick="switchTab('home')" id="nav-home" class="nav-item active flex flex-col items-center w-12 py-2">
+                <i class="fas fa-home text-[20px] mb-1"></i>
+                <span class="text-[9px] font-semibold">Home</span>
+            </button>
+            <button onclick="switchTab('history')" id="nav-history" class="nav-item flex flex-col items-center w-12 py-2">
+                <i class="fas fa-receipt text-[20px] mb-1"></i>
+                <span class="text-[9px] font-semibold">Sejarah</span>
+            </button>
+            <button onclick="switchTab('stats')" id="nav-stats" class="nav-item flex flex-col items-center w-12 py-2">
+                <i class="fas fa-chart-pie text-[20px] mb-1"></i>
+                <span class="text-[9px] font-semibold">Statistik</span>
+            </button>
+            <button onclick="switchTab('savings')" id="nav-savings" class="nav-item flex flex-col items-center w-12 py-2">
+                <i class="fas fa-piggy-bank text-[20px] mb-1"></i>
+                <span class="text-[9px] font-semibold">Simpanan</span>
+            </button>
+            <button onclick="switchTab('menu')" id="nav-menu" class="nav-item flex flex-col items-center w-12 py-2">
+                <i class="fas fa-user text-[20px] mb-1"></i>
+                <span class="text-[9px] font-semibold">Profil</span>
+            </button>
         </nav>
 
     </div>
@@ -620,6 +748,7 @@
             document.getElementById(`nav-${tabId}`).classList.add('active');
             
             if(tabId === 'stats') renderStatistics();
+            if(tabId === 'savings') renderSavingsAccounts();
             if(tabId === 'menu') renderFeatureSettingsList();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1221,6 +1350,144 @@
             refreshData();
         }
 
+        // ==========================================================
+        // AKAUN SIMPANAN (Tab Simpanan)
+        // ==========================================================
+        let savingsAccounts = JSON.parse(localStorage.getItem('poket_savings')) || [];
+        function saveSavingsAccounts() { localStorage.setItem('poket_savings', JSON.stringify(savingsAccounts)); }
+
+        let currentEditSavingsId = null;
+        let savingsCalcExpr = "0";
+
+        function openSavingsModal(id = null) {
+            currentEditSavingsId = id;
+
+            document.getElementById('savings-input-name').value = '';
+            document.getElementById('savings-input-amount').value = '';
+            savingsCalcExpr = "0";
+            document.getElementById('savings-calc-display').innerText = "0";
+            document.getElementById('savings-calculator-box').classList.add('hidden');
+
+            if (id) {
+                const acc = savingsAccounts.find(a => a.id === id);
+                if (acc) {
+                    document.getElementById('savings-input-name').value = acc.name;
+                    document.getElementById('savings-input-amount').value = acc.amount.toFixed(2);
+                    savingsCalcExpr = acc.amount.toString();
+                }
+                document.getElementById('savings-modal-title').innerText = "Kemaskini Akaun Simpanan";
+                document.getElementById('savings-submit-btn').innerText = "KEMASKINI AKAUN";
+            } else {
+                document.getElementById('savings-modal-title').innerText = "Tambah Akaun Simpanan";
+                document.getElementById('savings-submit-btn').innerText = "SIMPAN AKAUN";
+            }
+
+            const modal = document.getElementById('savings-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+        }
+
+        function closeSavingsModal() {
+            const modal = document.getElementById('savings-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.getElementById('savings-calculator-box').classList.add('hidden');
+            }, 300);
+        }
+
+        // Kalkulator khusus borang Akaun Simpanan (namespace berasingan drpd kalkulator borang Rekod,
+        // supaya kedua-dua borang tak konflik id/element bila dibuka berasingan)
+        function toggleSavingsCalculator() { document.getElementById('savings-calculator-box').classList.toggle('hidden'); }
+        function calcSavingsAppend(val) {
+            savingsCalcExpr = (savingsCalcExpr === "0" && val !== ".") ? val : savingsCalcExpr + val;
+            document.getElementById('savings-calc-display').innerText = savingsCalcExpr;
+        }
+        function calcSavingsClear() { savingsCalcExpr = "0"; document.getElementById('savings-calc-display').innerText = savingsCalcExpr; }
+        function calcSavingsDelete() {
+            savingsCalcExpr = savingsCalcExpr.length > 1 ? savingsCalcExpr.slice(0, -1) : "0";
+            document.getElementById('savings-calc-display').innerText = savingsCalcExpr;
+        }
+        function calcSavingsApply() {
+            if (!/^[0-9+\-*/.]+$/.test(savingsCalcExpr)) { alert('Format tidak sah'); return; }
+            try {
+                const res = Function('"use strict";return (' + savingsCalcExpr + ')')();
+                document.getElementById('savings-input-amount').value =
+                    (typeof res !== 'number' || isNaN(res) || !isFinite(res)) ? "0.00" : parseFloat(res).toFixed(2);
+                toggleSavingsCalculator();
+            } catch (e) {
+                alert('Format tidak sah');
+            }
+        }
+
+        function saveSavingsAccount() {
+            const name = document.getElementById('savings-input-name').value.trim();
+            const amt = parseFloat(document.getElementById('savings-input-amount').value);
+
+            if (!name) { alert('Sila masukkan nama akaun.'); return; }
+            if (isNaN(amt) || amt < 0) { alert('Sila masukkan jumlah yang sah.'); return; }
+
+            if (currentEditSavingsId) {
+                const acc = savingsAccounts.find(a => a.id === currentEditSavingsId);
+                if (acc) { acc.name = name; acc.amount = amt; }
+            } else {
+                savingsAccounts.push({ id: Date.now(), name, amount: amt });
+            }
+
+            saveSavingsAccounts();
+            closeSavingsModal();
+            renderSavingsAccounts();
+        }
+
+        function editSavingsAccount(id) { openSavingsModal(id); }
+
+        function deleteSavingsAccount(id) {
+            if (confirm('Padam akaun simpanan ini?')) {
+                savingsAccounts = savingsAccounts.filter(a => a.id !== id);
+                saveSavingsAccounts();
+                renderSavingsAccounts();
+            }
+        }
+
+        function renderSavingsAccounts() {
+            const listEl = document.getElementById('savings-account-list');
+            if (!listEl) return;
+
+            if (savingsAccounts.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto flex items-center justify-center text-slate-400 mb-3">
+                            <i class="fas fa-piggy-bank text-2xl"></i>
+                        </div>
+                        <p class="text-slate-400 text-sm">Tiada akaun simpanan lagi</p>
+                        <p class="text-slate-300 dark:text-slate-600 text-xs mt-1">Tekan + untuk tambah akaun pertama anda</p>
+                    </div>`;
+            } else {
+                listEl.innerHTML = savingsAccounts.map(acc => `
+                    <li class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sleek flex items-center justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-piggy-bank"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-bold text-slate-700 dark:text-slate-200 text-sm truncate">${acc.name}</p>
+                                <p class="text-emerald-500 font-bold text-sm mt-0.5">RM ${acc.amount.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col space-y-1 flex-shrink-0">
+                            <button onclick="editSavingsAccount(${acc.id})" class="text-slate-300 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 bg-slate-50 dark:bg-slate-700/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-pen text-[10px]"></i></button>
+                            <button onclick="deleteSavingsAccount(${acc.id})" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-slate-700/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                        </div>
+                    </li>`).join('');
+            }
+
+            const total = savingsAccounts.reduce((sum, a) => sum + a.amount, 0);
+            document.getElementById('savings-total-amount').innerText = total.toFixed(2);
+        }
+
         function toggleTheme() {
             currentTheme = currentTheme === 'light' ? 'dark' : 'light';
             document.documentElement.classList.toggle('dark');
@@ -1399,8 +1666,51 @@
             renderCategoryBreakdown('income-breakdown-list', incCat, tInc, incomeColorPalette, 'fa-wallet');
         }
 
+        // ==========================================================
+        // PWA: daftar service worker + tangani butang "Pasang App"
+        // ==========================================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Guna laluan relatif supaya berfungsi tak kira di mana app di-host
+                navigator.serviceWorker.register('service-worker.js').catch(() => {
+                    // Senyap sahaja jika gagal (contoh: dibuka terus dari fail tempatan tanpa host)
+                });
+            });
+        }
+
+        let deferredInstallPrompt = null;
+
+        // Chrome/Android akan lancarkan event ni bila app disahkan "installable"
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const card = document.getElementById('install-app-card');
+            card.classList.remove('hidden');
+            card.classList.add('flex');
+        });
+
+        function installPwa() {
+            if (!deferredInstallPrompt) return;
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.then(() => {
+                deferredInstallPrompt = null;
+                const card = document.getElementById('install-app-card');
+                card.classList.add('hidden');
+                card.classList.remove('flex');
+            });
+        }
+
+        // Bila app dah berjaya dipasang, sembunyikan kad galakan pasang buat selama-lamanya
+        window.addEventListener('appinstalled', () => {
+            const card = document.getElementById('install-app-card');
+            card.classList.add('hidden');
+            card.classList.remove('flex');
+            deferredInstallPrompt = null;
+        });
+
         // Init
         applyWeeklyTrendUiState(); // guna semula saiz kad yang disimpan pengguna (sebelum carta pertama dilukis)
+        renderSavingsAccounts();
         refreshData();
     </script>
 </body>
