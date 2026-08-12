@@ -2,7 +2,7 @@
   "name": "Poket Harian",
   "short_name": "Poket Harian",
   "description": "Urus belanja dan pendapatan harian anda dengan mudah.",
-  "start_url": "./poket-harian.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
