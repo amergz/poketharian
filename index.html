@@ -335,6 +335,49 @@
                     </button>
                 </div>
 
+                <!-- Graf Trend Simpanan (jumlah keseluruhan, paparan mingguan) -->
+                <div class="neo-card bg-white dark:bg-slate-800 rounded-3xl p-5 mb-6">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+                                <i class="fas fa-chart-line text-[11px]"></i>
+                            </div>
+                            <h3 class="text-xs font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Trend Simpanan</h3>
+                            <button type="button" onclick="alert('Graf ini menunjukkan jumlah keseluruhan semua akaun simpanan anda bagi setiap hari (Ahd-Sab) dalam minggu yang dipilih.')" class="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-300 flex items-center justify-center">
+                                <i class="fas fa-info text-[8px]"></i>
+                            </button>
+                        </div>
+                        <button type="button" id="savings-trend-expand-btn" onclick="toggleSavingsTrendExpand()"
+                            class="w-7 h-7 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center press-scale">
+                            <i id="savings-trend-expand-icon" class="fas fa-chevron-down text-[10px] transition-transform duration-300 ease-in-out"></i>
+                        </button>
+                    </div>
+
+                    <!-- Sparkline mini: sentiasa nampak, 1/4 tinggi asal -->
+                    <div id="savingsTrendChartWrapper" class="relative h-10 w-full mt-2 transition-all duration-300 ease-in-out">
+                        <canvas id="savingsTrendChart"></canvas>
+                    </div>
+
+                    <!-- Butiran penuh: hanya nampak bila dikembangkan -->
+                    <div id="savings-trend-details" class="overflow-hidden transition-all duration-300 ease-in-out" style="max-height:0px; opacity:0;">
+                        <div class="pt-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <p id="savings-trend-range" class="text-[10px] text-slate-400 font-semibold"></p>
+                                <button type="button" onclick="cycleSavingsTrendPeriod()"
+                                    class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 press-scale">
+                                    <i class="fas fa-repeat text-[8px]"></i>
+                                    <span id="savings-trend-period-label" class="text-[9px] font-bold uppercase tracking-wide">Mingguan</span>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between pt-3 border-t border-dashed border-slate-200 dark:border-slate-700">
+                                <button type="button" onclick="changeSavingsTrend(-1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 active:scale-90 transition"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                                <button type="button" onclick="changeSavingsTrend(0)" id="savings-trend-current-btn" class="px-3 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 active:scale-90 transition text-[9px] font-bold uppercase tracking-wide">Minggu Kini</button>
+                                <button type="button" onclick="changeSavingsTrend(1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 active:scale-90 transition"><i class="fas fa-chevron-right text-[10px]"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <ul id="savings-account-list" class="space-y-3"></ul>
             </div>
 
@@ -677,7 +720,7 @@
         let currentEditId = null; 
 
         // Pilihan "custom" saiz kad yang disimpan pengguna (kekal walau reload/tutup app)
-        let uiPrefs = JSON.parse(localStorage.getItem('poket_ui_prefs')) || { calendarExpanded: false, weeklyTrendExpanded: false };
+        let uiPrefs = JSON.parse(localStorage.getItem('poket_ui_prefs')) || { calendarExpanded: false, weeklyTrendExpanded: false, savingsTrendExpanded: false };
         function saveUiPrefs() { localStorage.setItem('poket_ui_prefs', JSON.stringify(uiPrefs)); }
 
         // State Kalendar (Lalai: false = Mingguan, true = Bulanan)
@@ -1489,6 +1532,217 @@
 
             const total = savingsAccounts.reduce((sum, a) => sum + a.amount, 0);
             document.getElementById('savings-total-amount').innerText = total.toFixed(2);
+
+            recordSavingsSnapshot(total);
+            renderSavingsTrend();
+        }
+
+        // ==========================================================
+        // GRAF TREND SIMPANAN (jumlah keseluruhan, paparan mingguan)
+        // ==========================================================
+        // Sejarah "snapshot" jumlah keseluruhan simpanan mengikut tarikh —
+        // direkod setiap kali senarai akaun berubah (tambah/edit/padam)
+        let savingsHistory = JSON.parse(localStorage.getItem('poket_savings_history')) || [];
+        function saveSavingsHistoryLog() { localStorage.setItem('poket_savings_history', JSON.stringify(savingsHistory)); }
+
+        function recordSavingsSnapshot(total) {
+            const todayStr = getLocalYYYYMMDD();
+            const existing = savingsHistory.find(h => h.date === todayStr);
+            if (existing) {
+                existing.total = total;
+            } else {
+                savingsHistory.push({ date: todayStr, total });
+            }
+            savingsHistory.sort((a, b) => a.date.localeCompare(b.date));
+            saveSavingsHistoryLog();
+        }
+
+        // Cari baki simpanan pada tarikh tertentu — guna nilai snapshot terkini
+        // sebelum/pada tarikh tu (baki dibawa ke depan, sebab ia jumlah "semasa", bukan aliran harian)
+        function getSavingsTotalOnDate(dateStr) {
+            let result = 0;
+            for (const h of savingsHistory) {
+                if (h.date <= dateStr) result = h.total;
+                else break;
+            }
+            return result;
+        }
+
+        let savingsTrendChart = null;
+        let savingsTrendDate = new Date();
+        let isSavingsTrendExpanded = uiPrefs.savingsTrendExpanded || false;
+
+        // Tempoh paparan graf: 'weekly' | 'monthly' | 'yearly'
+        const savingsTrendPeriodOrder = ['weekly', 'monthly', 'yearly'];
+        const savingsTrendPeriodLabels = { weekly: 'Mingguan', monthly: 'Bulanan', yearly: 'Tahunan' };
+        const savingsTrendCurrentLabels = { weekly: 'Minggu Kini', monthly: 'Bulan Kini', yearly: 'Tahun Kini' };
+        let savingsTrendPeriod = uiPrefs.savingsTrendPeriod || 'weekly';
+
+        function cycleSavingsTrendPeriod() {
+            const idx = savingsTrendPeriodOrder.indexOf(savingsTrendPeriod);
+            savingsTrendPeriod = savingsTrendPeriodOrder[(idx + 1) % savingsTrendPeriodOrder.length];
+            uiPrefs.savingsTrendPeriod = savingsTrendPeriod;
+            saveUiPrefs();
+
+            document.getElementById('savings-trend-period-label').innerText = savingsTrendPeriodLabels[savingsTrendPeriod];
+            document.getElementById('savings-trend-current-btn').innerText = savingsTrendCurrentLabels[savingsTrendPeriod];
+            renderSavingsTrend();
+        }
+
+        function changeSavingsTrend(dir) {
+            if (dir === 0) {
+                savingsTrendDate = new Date(); // Butang "kini"
+            } else if (savingsTrendPeriod === 'weekly') {
+                savingsTrendDate.setDate(savingsTrendDate.getDate() + (dir * 7));
+            } else if (savingsTrendPeriod === 'monthly') {
+                savingsTrendDate.setMonth(savingsTrendDate.getMonth() + dir);
+            } else {
+                savingsTrendDate.setFullYear(savingsTrendDate.getFullYear() + dir);
+            }
+            renderSavingsTrend();
+        }
+
+        function applySavingsTrendUiState() {
+            const wrapper = document.getElementById('savingsTrendChartWrapper');
+            if (!wrapper) return; // elak ralat jika tab Simpanan belum dilukis (mis. dipanggil awal init)
+
+            wrapper.classList.toggle('h-10', !isSavingsTrendExpanded);
+            wrapper.classList.toggle('h-40', isSavingsTrendExpanded);
+
+            document.getElementById('savings-trend-expand-icon').classList.toggle('rotate-180', isSavingsTrendExpanded);
+            document.getElementById('savings-trend-period-label').innerText = savingsTrendPeriodLabels[savingsTrendPeriod];
+            document.getElementById('savings-trend-current-btn').innerText = savingsTrendCurrentLabels[savingsTrendPeriod];
+
+            const details = document.getElementById('savings-trend-details');
+            details.style.maxHeight = isSavingsTrendExpanded ? '160px' : '0px';
+            details.style.opacity = isSavingsTrendExpanded ? '1' : '0';
+        }
+
+        function toggleSavingsTrendExpand() {
+            isSavingsTrendExpanded = !isSavingsTrendExpanded;
+            uiPrefs.savingsTrendExpanded = isSavingsTrendExpanded;
+            saveUiPrefs();
+
+            applySavingsTrendUiState();
+            renderSavingsTrend(); // lukis semula carta supaya paksi/titik sesuai dengan saiz baru
+        }
+
+        function renderSavingsTrend() {
+            const canvas = document.getElementById('savingsTrendChart');
+            if (!canvas) return; // elak ralat jika tab Simpanan belum dilukis (mis. dipanggil awal init)
+
+            let labels = [];
+            let data = [];
+            let rangeLabel = '';
+
+            if (savingsTrendPeriod === 'weekly') {
+                const dow = savingsTrendDate.getDay();
+                const start = new Date(savingsTrendDate);
+                start.setDate(savingsTrendDate.getDate() - dow);
+
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(start);
+                    d.setDate(start.getDate() + i);
+                    labels.push(dayShortNames[i]);
+                    data.push(getSavingsTotalOnDate(getLocalYYYYMMDD(d)));
+                }
+
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                rangeLabel = start.getMonth() === end.getMonth()
+                    ? `${start.getDate()} - ${end.getDate()} ${monthNames[start.getMonth()]} ${end.getFullYear()}`
+                    : `${start.getDate()} ${monthNames[start.getMonth()]} - ${end.getDate()} ${monthNames[end.getMonth()]} ${end.getFullYear()}`;
+
+            } else if (savingsTrendPeriod === 'monthly') {
+                const year = savingsTrendDate.getFullYear();
+                const month = savingsTrendDate.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    labels.push(String(d));
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    data.push(getSavingsTotalOnDate(dateStr));
+                }
+                rangeLabel = `${monthNames[month]} ${year}`;
+
+            } else { // yearly
+                const year = savingsTrendDate.getFullYear();
+
+                for (let m = 0; m < 12; m++) {
+                    labels.push(monthNames[m]);
+                    const daysInMonth = new Date(year, m + 1, 0).getDate();
+                    const lastDayStr = `${year}-${String(m + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+                    data.push(getSavingsTotalOnDate(lastDayStr));
+                }
+                rangeLabel = String(year);
+            }
+
+            document.getElementById('savings-trend-range').innerText = rangeLabel;
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)';
+            const tickColor = isDark ? '#94a3b8' : '#64748b';
+            const compact = !isSavingsTrendExpanded; // true = paparan ringkas (sparkline mini)
+
+            if (savingsTrendChart) savingsTrendChart.destroy();
+            savingsTrendChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Jumlah Simpanan',
+                        data,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,0.10)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: compact ? 0 : (savingsTrendPeriod === 'monthly' ? 2 : 3),
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1.5,
+                        borderWidth: compact ? 2 : 2.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: compact ? 0 : { top: 6 } },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` Jumlah Simpanan: RM ${ctx.parsed.y.toFixed(2)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: compact
+                                ? { display: false }
+                                : {
+                                    color: tickColor,
+                                    font: { family: "'Poppins', sans-serif", size: 10, weight: '600' },
+                                    autoSkip: true,
+                                    maxTicksLimit: savingsTrendPeriod === 'monthly' ? 8 : 12
+                                }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            display: !compact,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: tickColor,
+                                font: { size: 9 },
+                                callback: (v) => 'RM' + v,
+                                maxTicksLimit: 4
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function toggleTheme() {
@@ -1713,6 +1967,7 @@
 
         // Init
         applyWeeklyTrendUiState(); // guna semula saiz kad yang disimpan pengguna (sebelum carta pertama dilukis)
+        applySavingsTrendUiState();
         renderSavingsAccounts();
         refreshData();
     </script>
