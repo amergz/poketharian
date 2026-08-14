@@ -536,7 +536,7 @@
                         <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1 uppercase tracking-wider">
                             <i class="fas fa-layer-group mr-1"></i>Ciri Tambahan
                         </h3>
-                        <p class="text-[10px] text-slate-400">Hidupkan mana-mana ciri di bawah untuk paparkannya sebagai widget di Homepage.</p>
+                        <p class="text-[10px] text-slate-400">Tekan ikon untuk hidup/matikan. Ciri aktif akan muncul sebagai widget di Homepage.</p>
                     </div>
                     <div id="feature-settings-list"></div>
                 </div>
@@ -715,6 +715,103 @@
                     <button type="button" onclick="saveSavingsAccount()" id="savings-submit-btn" class="w-full bg-slate-800 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-sleek hover:bg-slate-900 transition-all mt-4 text-sm tracking-wide">
                         SIMPAN AKAUN
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MODAL: KALKULATOR 3D COSTING                -->
+        <!-- ========================================== -->
+        <div id="costing-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex-col justify-end transition-opacity duration-300 opacity-0">
+            <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-[2rem] p-6 slide-up-modal shadow-[0_-10px_40px_rgba(0,0,0,0.1)] max-h-[90vh] overflow-y-auto">
+
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white">
+                        <span class="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 inline-flex items-center justify-center mr-1 align-middle"><i class="fas fa-cube text-sm"></i></span>
+                        Pengiraan 3D Costing
+                    </h3>
+                    <button onclick="closeCostingModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-400 mb-5">Kira kos bahan &amp; cadangan harga jual untuk setiap order percetakan 3D.</p>
+
+                <!-- Input boleh ubah -->
+                <div class="space-y-3">
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Kos Filamen (RM per gram)</label>
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-400 font-bold text-sm">RM</span>
+                            <input type="number" id="costing-price-per-gram" value="0.15" step="0.01" min="0" inputmode="decimal"
+                                oninput="renderCostingCalc()" class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-1">Cth: gulung 1000g harga RM150 → RM0.15 / gram</p>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Berat Bahan Digunakan</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="costing-grams-used" value="0" step="1" min="0" inputmode="decimal"
+                                oninput="renderCostingCalc()" class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                            <span class="text-slate-400 font-bold text-sm">gram</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Masa Percetakan</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="costing-print-hours" value="0" step="0.1" min="0" inputmode="decimal"
+                                oninput="renderCostingCalc()" class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                            <span class="text-slate-400 font-bold text-sm">jam</span>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-1">Untuk kira kos susut nilai mesin (RM0.625/jam)</p>
+                    </div>
+                </div>
+
+                <!-- Pecahan kos (nilai tetap ditunjukkan, bukan boleh ubah) -->
+                <div class="mt-5 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">Pecahan Kos</p>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 dark:text-slate-400">Kos Bahan (Material)</span>
+                            <span id="costing-out-material" class="font-bold text-slate-700 dark:text-slate-200">RM 0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 dark:text-slate-400">Kos Elektrik <span class="text-slate-300 dark:text-slate-600">(tetap)</span></span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200">RM 0.70</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 dark:text-slate-400">Kos Pos <span class="text-slate-300 dark:text-slate-600">(tetap)</span></span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200">RM 5.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 dark:text-slate-400">Susut Nilai Mesin <span class="text-slate-300 dark:text-slate-600">(RM0.625/jam)</span></span>
+                            <span id="costing-out-depreciation" class="font-bold text-slate-700 dark:text-slate-200">RM 0.00</span>
+                        </div>
+                        <div class="flex justify-between pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <span class="text-slate-600 dark:text-slate-300 font-bold">Jumlah Kos Asas</span>
+                            <span id="costing-out-subtotal" class="font-bold text-slate-800 dark:text-white">RM 0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 dark:text-slate-400">+ Fi Shopee (18%)</span>
+                            <span id="costing-out-shopee" class="font-bold text-amber-500">RM 0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 dark:text-slate-400">+ Margin Untung (20%)</span>
+                            <span id="costing-out-margin" class="font-bold text-emerald-500">RM 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Harga jual akhir -->
+                <div class="mt-4 bg-gradient-to-r from-rose-500 to-orange-500 text-white p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider text-rose-100 font-semibold">Harga Jual Cadangan</p>
+                        <p class="text-2xl font-extrabold mt-0.5">RM <span id="costing-out-total">0.00</span></p>
+                    </div>
+                    <div class="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-tag text-lg"></i>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1151,51 +1248,117 @@
 
 
         // --- CIRI TAMBAHAN (diaktifkan dari tab Profil, dipaparkan di Homepage) ---
+        // ==========================================================
+        // KALKULATOR 3D COSTING
+        // ==========================================================
+        // Nilai tetap (mengikut spesifikasi — bukan boleh ubah)
+        const COSTING_ELECTRICITY = 0.70;
+        const COSTING_POSTAGE = 5.00;
+        const COSTING_SHOPEE_FEE_PCT = 0.18; // 18%
+        const COSTING_MARGIN_PCT = 0.20;     // 20%
+
+        // Susut nilai mesin 3D: Harga Mesin ÷ Jangka Hayat (jam) = kadar RM/jam
+        const COSTING_MACHINE_PRICE = 5000;      // RM
+        const COSTING_MACHINE_LIFESPAN_HRS = 8000; // jam
+        const COSTING_DEPRECIATION_PER_HOUR = COSTING_MACHINE_PRICE / COSTING_MACHINE_LIFESPAN_HRS; // = RM 0.625/jam
+
+        function openCostingModal() {
+            const modal = document.getElementById('costing-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            renderCostingCalc();
+        }
+
+        function closeCostingModal() {
+            const modal = document.getElementById('costing-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // Kiraan berjujukan ikut susunan yang diberi:
+        // Kos Bahan -> + Elektrik + Pos (Jumlah Kos Asas) -> + Fi Shopee 18% -> + Margin Untung 20% -> Harga Jual
+        function renderCostingCalc() {
+            const pricePerGram = parseFloat(document.getElementById('costing-price-per-gram').value) || 0;
+            const gramsUsed = parseFloat(document.getElementById('costing-grams-used').value) || 0;
+            const printHours = parseFloat(document.getElementById('costing-print-hours').value) || 0;
+
+            const materialCost = pricePerGram * gramsUsed;
+            const depreciationCost = COSTING_DEPRECIATION_PER_HOUR * printHours;
+            const subtotal = materialCost + COSTING_ELECTRICITY + COSTING_POSTAGE + depreciationCost;
+            const shopeeFeeAmt = subtotal * COSTING_SHOPEE_FEE_PCT;
+            const afterShopee = subtotal + shopeeFeeAmt;
+            const marginAmt = afterShopee * COSTING_MARGIN_PCT;
+            const total = afterShopee + marginAmt;
+
+            document.getElementById('costing-out-material').innerText = 'RM ' + materialCost.toFixed(2);
+            document.getElementById('costing-out-depreciation').innerText = 'RM ' + depreciationCost.toFixed(2);
+            document.getElementById('costing-out-subtotal').innerText = 'RM ' + subtotal.toFixed(2);
+            document.getElementById('costing-out-shopee').innerText = 'RM ' + shopeeFeeAmt.toFixed(2);
+            document.getElementById('costing-out-margin').innerText = 'RM ' + marginAmt.toFixed(2);
+            document.getElementById('costing-out-total').innerText = total.toFixed(2);
+        }
+
         const featureCatalog = [
             { id: 'import-bank', name: 'Import Penyata Bank', desc: 'Muat naik CSV Maybank / TnG terus jadi rekod', icon: 'fa-file-import', iconWrap: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' },
             { id: 'savings-goal', name: 'Sasaran Simpanan', desc: 'Tetapkan matlamat & jejak kemajuan simpanan', icon: 'fa-piggy-bank', iconWrap: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
             { id: 'bill-reminder', name: 'Peringatan Bil Wajib', desc: 'Notifikasi automatik sebelum tarikh akhir bayaran', icon: 'fa-bell', iconWrap: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
             { id: 'multi-account', name: 'Berbilang Akaun Bank', desc: 'Uruskan Maybank, TnG, CIMB dll berasingan', icon: 'fa-building-columns', iconWrap: 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400' },
-            { id: 'forecast', name: 'Ramalan Belanja Bulan Depan', desc: 'Anggaran berdasarkan trend belanja lepas', icon: 'fa-wand-magic-sparkles', iconWrap: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' }
+            { id: 'forecast', name: 'Ramalan Belanja Bulan Depan', desc: 'Anggaran berdasarkan trend belanja lepas', icon: 'fa-wand-magic-sparkles', iconWrap: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' },
+            { id: '3d-costing', name: 'Pengiraan 3D Costing', desc: 'Kira & anggar kos projek/pembinaan secara 3D', icon: 'fa-cube', iconWrap: 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' }
         ];
 
         let enabledFeatures = JSON.parse(localStorage.getItem('poket_enabled_features')) || [];
         function saveEnabledFeatures() { localStorage.setItem('poket_enabled_features', JSON.stringify(enabledFeatures)); }
 
-        // Senarai toggle dalam tab Profil
+        // Grid ikon dalam tab Profil — tekan ikon untuk hidup/matikan (gaya grid app menu)
         function renderFeatureSettingsList() {
             const container = document.getElementById('feature-settings-list');
             if (!container) return;
-            container.innerHTML = featureCatalog.map(f => {
-                const isOn = enabledFeatures.includes(f.id);
-                return `
-                    <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between last:border-b-0">
-                        <div class="flex items-center gap-3 min-w-0 pr-3">
-                            <div class="w-9 h-9 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon} text-xs"></i></div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${f.name}</p>
-                                <p class="text-[10px] text-slate-400 truncate">${f.desc}</p>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                            <input type="checkbox" data-feature-id="${f.id}" class="feature-toggle sr-only peer" ${isOn ? 'checked' : ''}>
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                        </label>
-                    </div>`;
-            }).join('');
 
-            container.querySelectorAll('.feature-toggle').forEach(toggle => {
-                toggle.addEventListener('change', (e) => {
-                    const id = e.target.dataset.featureId;
-                    if (e.target.checked) {
-                        if (!enabledFeatures.includes(id)) enabledFeatures.push(id);
-                    } else {
-                        enabledFeatures = enabledFeatures.filter(fid => fid !== id);
-                    }
-                    saveEnabledFeatures();
-                    renderHomeFeatureWidgets();
-                });
-            });
+            container.innerHTML = `
+                <div class="grid grid-cols-4 gap-y-5 gap-x-2 p-4">
+                    ${featureCatalog.map(f => {
+                        const isCosting = f.id === '3d-costing';
+                        const isOn = isCosting ? true : enabledFeatures.includes(f.id); // 3D Costing sentiasa "hidup" — ciri sebenar, bukan placeholder
+                        const clickAction = isCosting ? "openCostingModal()" : `toggleFeatureFromGrid('${f.id}')`;
+                        return `
+                        <button type="button" onclick="${clickAction}" class="flex flex-col items-center gap-2 press-scale">
+                            <div class="relative">
+                                <div class="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                    isOn
+                                        ? f.iconWrap + ' ring-2 ring-indigo-500 dark:ring-indigo-400'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                                }">
+                                    <i class="fas ${f.icon} text-lg"></i>
+                                </div>
+                                ${isCosting ? `
+                                <span class="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-emerald-500 border-2 border-white dark:border-slate-800 flex items-center justify-center">
+                                    <i class="fas fa-bolt text-white text-[7px]"></i>
+                                </span>` : (isOn ? `
+                                <span class="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-indigo-600 border-2 border-white dark:border-slate-800 flex items-center justify-center">
+                                    <i class="fas fa-check text-white text-[7px]"></i>
+                                </span>` : '')}
+                            </div>
+                            <span class="text-[10px] font-semibold text-center leading-tight ${isOn ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}">${f.name}</span>
+                        </button>`;
+                    }).join('')}
+                </div>`;
+        }
+
+        function toggleFeatureFromGrid(id) {
+            if (enabledFeatures.includes(id)) {
+                enabledFeatures = enabledFeatures.filter(fid => fid !== id);
+            } else {
+                enabledFeatures.push(id);
+            }
+            saveEnabledFeatures();
+            renderFeatureSettingsList();
+            renderHomeFeatureWidgets();
         }
 
         // Widget placeholder di Homepage — hanya muncul untuk ciri yang diaktifkan
@@ -1405,13 +1568,29 @@
         let historyCategory = 'all';
         let historyDateMode = 'all';
 
-        function setTxFilter(type) {
-            txFilter = type;
+        // Kemaskini rupa pill "Hari Ini/Bulan Ini/Tahun Ini/Semua" sahaja (tanpa render/filter lain)
+        function applyTxFilterPillStyles(type) {
             ['daily', 'monthly', 'yearly', 'all'].forEach(f => {
                 const btn = document.getElementById(`filter-${f}`);
-                if(f === type) btn.className = "px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-200 dark:shadow-none whitespace-nowrap transition-all";
-                else btn.className = "px-5 py-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl text-xs font-medium whitespace-nowrap shadow-sleek transition-all";
+                if (!btn) return;
+                if (f === type) btn.className = "px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-bold whitespace-nowrap shadow-sm shadow-indigo-200 dark:shadow-none transition-all";
+                else btn.className = "px-4 py-2 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-xl text-[10px] font-medium whitespace-nowrap transition-all";
             });
+        }
+
+        function setTxFilter(type) {
+            txFilter = type;
+            applyTxFilterPillStyles(type);
+
+            // BUG FIX: guna pill tempoh cepat bermaksud pengguna nak tinggalkan Filter Tarikh
+            // lanjutan (Ikut Tarikh/Bulan/Tahun) — reset supaya kedua-dua sistem filter tak
+            // "AND" bertentangan (punca asal "Tiada rekod dijumpai" walau tarikh sah dipilih)
+            historyDateMode = 'all';
+            const modeEl = document.getElementById('history-date-mode');
+            if (modeEl) modeEl.value = 'all';
+            const wrap = document.getElementById('history-date-filter-wrap');
+            if (wrap) wrap.classList.add('hidden');
+
             renderFullHistory();
         }
 
@@ -1458,7 +1637,8 @@
         function updateHistorySearchPanelStatus() {
             const badge = document.getElementById('history-search-active-badge');
             const hasActiveSearch = (document.getElementById('history-search')?.value || '').trim() !== '' ||
-                (document.getElementById('history-category-filter')?.value || 'all') !== 'all';
+                (document.getElementById('history-category-filter')?.value || 'all') !== 'all' ||
+                historyDateMode !== 'all';
             badge?.classList.toggle('hidden', !hasActiveSearch);
         }
 
@@ -1473,6 +1653,17 @@
             dateEl.classList.toggle('hidden', historyDateMode !== 'date');
             monthEl.classList.toggle('hidden', historyDateMode !== 'month');
             yearEl.classList.toggle('hidden', historyDateMode !== 'year');
+
+            // BUG FIX: guna Filter Tarikh lanjutan (Ikut Tarikh/Bulan/Tahun) bermaksud
+            // pengguna nak tinggalkan pill tempoh cepat (Hari Ini/Bulan Ini/dll) — tukar
+            // pill ke "Semua" (guna helper "senyap" supaya tak reset balik historyDateMode
+            // yang baru sahaja ditetapkan di atas)
+            if (historyDateMode !== 'all') {
+                txFilter = 'all';
+                applyTxFilterPillStyles('all');
+            }
+
+            updateHistorySearchPanelStatus();
             renderFullHistory();
         }
 
