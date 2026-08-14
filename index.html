@@ -728,13 +728,9 @@
         </button>
 
         <!-- ========================================== -->
-        <!-- BOTTOM NAVIGATION (5 tab sama rata)        -->
+        <!-- BOTTOM NAVIGATION (Home di tengah, ikon lebih besar) -->
         <!-- ========================================== -->
         <nav class="fixed bottom-0 w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 flex justify-between items-center px-4 py-2 pb-safe z-40">
-            <button onclick="switchTab('home')" id="nav-home" class="nav-item active flex flex-col items-center w-12 py-2">
-                <i class="fas fa-home text-[20px] mb-1"></i>
-                <span class="text-[9px] font-semibold">Home</span>
-            </button>
             <button onclick="switchTab('history')" id="nav-history" class="nav-item flex flex-col items-center w-12 py-2">
                 <i class="fas fa-receipt text-[20px] mb-1"></i>
                 <span class="text-[9px] font-semibold">Sejarah</span>
@@ -742,6 +738,12 @@
             <button onclick="switchTab('stats')" id="nav-stats" class="nav-item flex flex-col items-center w-12 py-2">
                 <i class="fas fa-chart-pie text-[20px] mb-1"></i>
                 <span class="text-[9px] font-semibold">Statistik</span>
+            </button>
+            <button onclick="switchTab('home')" id="nav-home" class="nav-item active flex flex-col items-center w-14 py-1 -mt-3">
+                <span class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-glow mb-1">
+                    <i class="fas fa-home text-[22px]" style="color:#fff"></i>
+                </span>
+                <span class="text-[9px] font-bold">Home</span>
             </button>
             <button onclick="switchTab('savings')" id="nav-savings" class="nav-item flex flex-col items-center w-12 py-2">
                 <i class="fas fa-piggy-bank text-[20px] mb-1"></i>
@@ -1354,6 +1356,7 @@
             renderCalendar(); 
             renderWeeklyTrend();
             renderHomeFeatureWidgets();
+            populateHistoryFilters();
             renderFullHistory(); 
             if(document.getElementById('tab-stats').classList.contains('active')) renderStatistics();
         }
@@ -1511,10 +1514,10 @@
                     <div class="flex items-center space-x-3 w-[60%]">
                         <div class="w-11 h-11 flex-shrink-0 rounded-2xl flex items-center justify-center ${icon}"><i class="fas ${icon.split(' ')[0]}"></i></div>
                         <div class="overflow-hidden">
-                            <p class="font-bold text-slate-700 dark:text-slate-200 text-sm capitalize truncate">${t.text}</p>
+                            <p class="font-bold text-slate-700 dark:text-slate-200 text-sm capitalize truncate">${escapeHtml(t.text)}</p>
                             <div class="flex items-center text-[9px] text-slate-400 font-medium mt-1">
-                                <span class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mr-2 truncate">${t.category}</span>
-                                <span class="whitespace-nowrap">${t.date}</span>
+                                <span class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mr-2 truncate">${escapeHtml(t.category)}</span>
+                                <span class="whitespace-nowrap">${escapeHtml(t.date)}</span>
                             </div>
                         </div>
                     </div>
@@ -1531,8 +1534,6 @@
         function renderFullHistory() {
             const listEl = document.getElementById('full-transaction-list');
             if (!listEl) return;
-
-            populateHistoryFilters();
 
             const searchEl = document.getElementById('history-search');
             const categoryEl = document.getElementById('history-category-filter');
