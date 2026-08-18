@@ -381,6 +381,7 @@
                             </div>
                         </div>
                         <div id="expense-breakdown-list" class="space-y-2.5 mt-6"></div>
+                        <div id="expense-category-detail" class="hidden mt-4 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700"></div>
                     </div>
                     <div id="container-income-chart" class="p-6 hidden">
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-4">Kategori Pendapatan</h3>
@@ -392,6 +393,7 @@
                             </div>
                         </div>
                         <div id="income-breakdown-list" class="space-y-2.5 mt-6"></div>
+                        <div id="income-category-detail" class="hidden mt-4 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700"></div>
                     </div>
                 </div>
             </div>
@@ -2445,9 +2447,18 @@
         }
 
         // Bina senarai pecahan kategori (dot warna + nama + bar peratusan + amaun) di bawah carta
-        function renderCategoryBreakdown(containerId, categoryTotals, total, colorPalette, emptyIcon) {
+        // Kategori yang sedang "dibuka" (ditekan) bagi setiap jenis carta — null = tiada dipilih (kotak butiran tersembunyi secara default)
+        let selectedStatCategory = { expense: null, income: null };
+
+        function renderCategoryBreakdown(type, containerId, detailContainerId, categoryTotals, total, colorPalette, emptyIcon, periodTxList) {
             const container = document.getElementById(containerId);
+            const detailContainer = document.getElementById(detailContainerId);
             const entries = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+
+            // Kalau kategori yang dipilih sebelum ni dah tiada dalam carta/tempoh semasa, reset
+            if (selectedStatCategory[type] && !Object.prototype.hasOwnProperty.call(categoryTotals, selectedStatCategory[type])) {
+                selectedStatCategory[type] = null;
+            }
 
             if (entries.length === 0) {
                 container.innerHTML = `
@@ -2457,18 +2468,21 @@
                         </div>
                         <p class="text-xs text-slate-400 font-medium">Tiada data untuk tempoh ini.</p>
                     </div>`;
+                detailContainer.classList.add('hidden');
+                detailContainer.innerHTML = '';
                 return;
             }
 
             container.innerHTML = entries.map(([cat, amt], i) => {
                 const pct = total > 0 ? (amt / total * 100) : 0;
                 const color = colorPalette[i % colorPalette.length];
+                const isActive = selectedStatCategory[type] === cat;
                 return `
-                    <div class="flex items-center gap-3">
+                    <button type="button" class="stat-cat-row w-full flex items-center gap-3 text-left rounded-xl transition-colors ${isActive ? 'bg-slate-50 dark:bg-slate-700/40 -mx-2 px-2 py-1' : ''}" data-type="${type}" data-cat="${escapeHtmlAttr(cat)}">
                         <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${color}"></span>
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-baseline mb-1">
-                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${cat}</span>
+                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${escapeHtml(cat)}</span>
                                 <span class="text-xs font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap ml-2">RM ${formatRMShort(amt)}</span>
                             </div>
                             <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -2476,8 +2490,49 @@
                             </div>
                         </div>
                         <span class="text-xs font-bold w-10 text-right flex-shrink-0" style="color:${color}">${pct.toFixed(0)}%</span>
-                    </div>`;
+                        <i class="fas fa-chevron-down text-[9px] text-slate-300 dark:text-slate-600 transition-transform duration-200 flex-shrink-0 ${isActive ? 'rotate-180' : ''}"></i>
+                    </button>`;
             }).join('');
+
+            container.querySelectorAll('.stat-cat-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    const t = row.dataset.type;
+                    const c = row.dataset.cat;
+                    selectedStatCategory[t] = (selectedStatCategory[t] === c) ? null : c; // tekan sama = tutup semula
+                    renderCategoryBreakdown(type, containerId, detailContainerId, categoryTotals, total, colorPalette, emptyIcon, periodTxList);
+                });
+            });
+
+            renderStatCategoryDetail(type, detailContainerId, periodTxList);
+        }
+
+        // Kotak senarai transaksi bagi kategori yang ditekan — TERSEMBUNYI secara default,
+        // hanya dipaparkan bila pengguna tekan salah satu kategori dalam pecahan carta
+        function renderStatCategoryDetail(type, detailContainerId, periodTxList) {
+            const detailContainer = document.getElementById(detailContainerId);
+            const cat = selectedStatCategory[type];
+
+            if (!cat) {
+                detailContainer.classList.add('hidden');
+                detailContainer.innerHTML = '';
+                return;
+            }
+
+            const list = periodTxList.filter(t => t.category === cat).sort((a, b) => b.id - a.id);
+            detailContainer.classList.remove('hidden');
+            detailContainer.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-bold text-slate-600 dark:text-slate-300">Rekod "${escapeHtml(cat)}" <span class="text-slate-400 font-normal">(${list.length})</span></p>
+                    <button type="button" onclick="closeStatCategoryDetail('${type}')" class="text-[10px] text-slate-400 hover:text-rose-500 font-semibold transition-colors">Tutup ✕</button>
+                </div>
+                <ul class="space-y-2.5">
+                    ${list.map(createTxHTML).join('')}
+                </ul>`;
+        }
+
+        function closeStatCategoryDetail(type) {
+            selectedStatCategory[type] = null;
+            renderStatistics(); // lukis semula supaya highlight pada baris kategori & kotak butiran sync
         }
 
         // Konfigurasi label peratusan terus atas setiap slice (chartjs-plugin-datalabels)
@@ -2500,10 +2555,11 @@
         function renderStatistics() {
             const filterStr = statFilter === 'monthly' ? getLocalYYYYMMDD().substring(0,7) : getLocalYYYYMMDD().substring(0,4);
             let tInc = 0, tExp = 0, expCat = {}, incCat = {};
+            let expTxList = [], incTxList = [];
 
             transactions.filter(t => t.date.startsWith(filterStr)).forEach(t => {
-                if(t.type === 'income') { tInc += t.amount; incCat[t.category] = (incCat[t.category] || 0) + t.amount; }
-                else { tExp += t.amount; expCat[t.category] = (expCat[t.category] || 0) + t.amount; }
+                if(t.type === 'income') { tInc += t.amount; incCat[t.category] = (incCat[t.category] || 0) + t.amount; incTxList.push(t); }
+                else { tExp += t.amount; expCat[t.category] = (expCat[t.category] || 0) + t.amount; expTxList.push(t); }
             });
 
             document.getElementById('stat-income').innerText = tInc.toFixed(2);
@@ -2545,7 +2601,7 @@
                 options: chartOpts,
                 plugins: [ChartDataLabels]
             });
-            renderCategoryBreakdown('expense-breakdown-list', expCat, tExp, expenseColorPalette, 'fa-receipt');
+            renderCategoryBreakdown('expense', 'expense-breakdown-list', 'expense-category-detail', expCat, tExp, expenseColorPalette, 'fa-receipt', expTxList);
 
             // ---- Carta Pendapatan ----
             const incLabels = Object.keys(incCat).length ? Object.keys(incCat) : ['Tiada Data'];
@@ -2560,7 +2616,7 @@
                 options: chartOpts,
                 plugins: [ChartDataLabels]
             });
-            renderCategoryBreakdown('income-breakdown-list', incCat, tInc, incomeColorPalette, 'fa-wallet');
+            renderCategoryBreakdown('income', 'income-breakdown-list', 'income-category-detail', incCat, tInc, incomeColorPalette, 'fa-wallet', incTxList);
         }
 
         // ==========================================================
