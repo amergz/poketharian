@@ -615,7 +615,8 @@
 
                     <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
                         <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Keterangan</label>
-                        <input type="text" id="input-text" placeholder="Cth: Nasi Ayam..." required autocomplete="off" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none font-medium">
+                        <input type="text" id="input-text" list="tx-description-suggestions" placeholder="Cth: Nasi Ayam..." required autocomplete="off" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none font-medium">
+                        <datalist id="tx-description-suggestions"></datalist>
                     </div>
                     
                     <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800 relative cursor-pointer" onclick="toggleCalculator()">
@@ -1689,9 +1690,29 @@
                 document.getElementById('btn-income').className = "flex-1 py-3 text-sm font-bold text-emerald-500 dark:text-emerald-400 z-10 transition-colors";
                 document.getElementById('input-category').innerHTML = customIncomeCategories.map(c => `<option value="${escapeHtmlAttr(c)}">${escapeHtml(c)}</option>`).join('');
             }
+            populateDescriptionSuggestions(type);
         }
         document.getElementById('btn-expense').addEventListener('click', () => setInputType('expense'));
         document.getElementById('btn-income').addEventListener('click', () => setInputType('income'));
+
+        // Auto-fill Keterangan: cadangkan keterangan yang PERNAH ditaip sebelum ini (ikut jenis Belanja/Pendapatan
+        // semasa), supaya pengguna tak perlu keyin semula untuk rekod yang serupa (cth: "Nasi Ayam" berulang kali)
+        function populateDescriptionSuggestions(type) {
+            const datalist = document.getElementById('tx-description-suggestions');
+            if (!datalist) return;
+
+            const seen = new Set();
+            const suggestions = [];
+            [...transactions].sort((a, b) => b.id - a.id).forEach(t => {
+                if (t.type !== type) return;
+                const key = t.text.trim().toLowerCase();
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                suggestions.push(t.text.trim());
+            });
+
+            datalist.innerHTML = suggestions.slice(0, 30).map(s => `<option value="${escapeHtmlAttr(s)}"></option>`).join('');
+        }
 
         let calcExpr = "0";
         function toggleCalculator() { document.getElementById('calculator-box').classList.toggle('hidden'); }
