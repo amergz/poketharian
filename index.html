@@ -900,6 +900,71 @@
         </div>
 
         <!-- ========================================== -->
+        <!-- MODAL: SASARAN SIMPANAN (skrin penuh)      -->
+        <!-- ========================================== -->
+        <div id="savings-goal-modal" class="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-50 hidden flex-col slide-in-right-modal">
+            <div class="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-slate-100 dark:border-slate-700/50 px-5 py-4 flex items-center gap-3">
+                <button onclick="closeSavingsGoalModal()" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-arrow-left text-sm"></i>
+                </button>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 inline-flex items-center justify-center"><i class="fas fa-piggy-bank text-xs"></i></span>
+                    Sasaran Simpanan
+                </h3>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <p class="text-[10px] text-slate-400 mb-5">Sasaran simpanan dikira automatik: <span class="font-bold text-emerald-500">20% daripada surplus (baki bersih) bulan lepas</span>.</p>
+
+                <!-- Kad sasaran utama -->
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-3xl shadow-sleek mb-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-wider text-emerald-100 font-semibold">Sasaran Simpanan (20%)</p>
+                            <p class="text-3xl font-extrabold mt-1">RM <span id="savings-goal-amount">0.00</span></p>
+                            <p id="savings-goal-month-label" class="text-[10px] text-emerald-100 mt-1"></p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-bullseye text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="savings-goal-warning" class="hidden text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl p-3 mb-3">
+                    <i class="fas fa-triangle-exclamation mr-1"></i> Tiada surplus bulan lepas (perbelanjaan melebihi pendapatan) — sasaran simpanan ditetapkan RM0.00.
+                </p>
+
+                <!-- Pecahan pengiraan -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek mb-6 space-y-2.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 dark:text-slate-400">Pendapatan Bulan Lepas</span>
+                        <span id="savings-goal-income" class="font-bold text-emerald-500">RM 0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 dark:text-slate-400">Perbelanjaan Bulan Lepas</span>
+                        <span id="savings-goal-expense" class="font-bold text-rose-500">RM 0.00</span>
+                    </div>
+                    <div class="flex justify-between pt-2.5 border-t border-slate-100 dark:border-slate-700">
+                        <span class="text-slate-600 dark:text-slate-300 font-bold">Surplus (Baki Bersih)</span>
+                        <span id="savings-goal-surplus" class="font-bold text-slate-800 dark:text-white">RM 0.00</span>
+                    </div>
+                </div>
+
+                <!-- Graf linear bulanan -->
+                <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Trend Surplus &amp; Sasaran (6 Bulan)</h4>
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek">
+                    <div class="flex items-center gap-4 mb-3">
+                        <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>Surplus Bulanan</span>
+                        <span class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Sasaran (20%)</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="savingsGoalChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
         <!-- BUTANG "+" TERAPUNG (diasingkan dari nav, hanya di tab Home) -->
         <!-- ========================================== -->
         <button id="floating-add-btn" onclick="prepareNewTx()"
@@ -1540,6 +1605,199 @@
             refreshData();
         }
 
+        // ==========================================================
+        // SASARAN SIMPANAN — 20% daripada surplus (baki bersih) bulan lepas
+        // ==========================================================
+        const SAVINGS_GOAL_PCT = 0.20; // 20% (tetap)
+        let savingsGoalChart = null;
+
+        function openSavingsGoalModal() {
+            const modal = document.getElementById('savings-goal-modal');
+            modal.classList.remove('hidden', 'slide-out-right-modal');
+            modal.classList.add('flex', 'slide-in-right-modal');
+            renderSavingsGoal();
+        }
+
+        function closeSavingsGoalModal() {
+            const modal = document.getElementById('savings-goal-modal');
+            modal.classList.remove('slide-in-right-modal');
+            modal.classList.add('slide-out-right-modal');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex', 'slide-out-right-modal');
+            }, 250);
+        }
+
+        // Kira jumlah Pendapatan, Perbelanjaan & Surplus (baki bersih) untuk satu bulan tertentu
+        function getMonthNetSurplus(year, month) {
+            const prefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+            let inc = 0, exp = 0;
+            transactions.forEach(t => {
+                if (!t.date.startsWith(prefix)) return;
+                if (t.type === 'income') inc += t.amount; else exp += t.amount;
+            });
+            return { inc, exp, surplus: inc - exp };
+        }
+
+        function renderSavingsGoal() {
+            const canvas = document.getElementById('savingsGoalChart');
+            if (!canvas) return;
+
+            const now = new Date();
+            const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lm = getMonthNetSurplus(lastMonthDate.getFullYear(), lastMonthDate.getMonth());
+            const goal = lm.surplus > 0 ? lm.surplus * SAVINGS_GOAL_PCT : 0;
+
+            document.getElementById('savings-goal-amount').innerText = goal.toFixed(2);
+            document.getElementById('savings-goal-income').innerText = 'RM ' + lm.inc.toFixed(2);
+            document.getElementById('savings-goal-expense').innerText = 'RM ' + lm.exp.toFixed(2);
+
+            const surplusEl = document.getElementById('savings-goal-surplus');
+            surplusEl.innerText = 'RM ' + lm.surplus.toFixed(2);
+            surplusEl.className = 'font-bold ' + (lm.surplus >= 0 ? 'text-emerald-500' : 'text-rose-500');
+
+            document.getElementById('savings-goal-month-label').innerText =
+                `Berdasarkan ${monthNames[lastMonthDate.getMonth()]} ${lastMonthDate.getFullYear()}`;
+
+            document.getElementById('savings-goal-warning').classList.toggle('hidden', lm.surplus > 0);
+
+            // Graf linear: trend Surplus & Sasaran (20%) untuk 6 bulan lepas (termasuk bulan semasa)
+            const labels = [];
+            const surplusData = [];
+            const goalData = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const m = getMonthNetSurplus(d.getFullYear(), d.getMonth());
+                labels.push(monthNames[d.getMonth()]);
+                surplusData.push(m.surplus);
+                goalData.push(m.surplus > 0 ? m.surplus * SAVINGS_GOAL_PCT : 0);
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)';
+            const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+            if (savingsGoalChart) savingsGoalChart.destroy();
+            savingsGoalChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Surplus Bulanan',
+                            data: surplusData,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99,102,241,0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#6366f1',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1.5,
+                            borderWidth: 2.5
+                        },
+                        {
+                            label: 'Sasaran Simpanan (20%)',
+                            data: goalData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#10b981',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1.5,
+                            borderWidth: 2.5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.dataset.label}: RM ${ctx.parsed.y.toFixed(2)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: tickColor, font: { family: "'Poppins', sans-serif", size: 10, weight: '600' } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: tickColor,
+                                font: { size: 9 },
+                                callback: (v) => 'RM' + v,
+                                maxTicksLimit: 5
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Graf mini (sparkline) + info Sasaran Simpanan untuk widget di Homepage
+        let homeSavingsGoalChart = null;
+
+        function renderHomeSavingsGoalWidget() {
+            const canvas = document.getElementById('homeSavingsGoalChart');
+            if (!canvas) return;
+
+            const now = new Date();
+            const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lm = getMonthNetSurplus(lastMonthDate.getFullYear(), lastMonthDate.getMonth());
+            const goal = lm.surplus > 0 ? lm.surplus * SAVINGS_GOAL_PCT : 0;
+
+            const infoEl = document.getElementById('home-savings-goal-info');
+            if (infoEl) {
+                infoEl.innerText = `RM ${goal.toFixed(2)} — 20% surplus ${monthNames[lastMonthDate.getMonth()]}`;
+            }
+
+            const labels = [];
+            const goalData = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const m = getMonthNetSurplus(d.getFullYear(), d.getMonth());
+                labels.push(monthNames[d.getMonth()]);
+                goalData.push(m.surplus > 0 ? m.surplus * SAVINGS_GOAL_PCT : 0);
+            }
+
+            if (homeSavingsGoalChart) homeSavingsGoalChart.destroy();
+            homeSavingsGoalChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: goalData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,0.10)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: 0 },
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+        }
+
         const featureCatalog = [
             { id: 'import-bank', name: 'Import Penyata Bank', desc: 'Muat naik CSV Maybank / TnG terus jadi rekod', icon: 'fa-file-import', iconWrap: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' },
             { id: 'savings-goal', name: 'Sasaran Simpanan', desc: 'Tetapkan matlamat & jejak kemajuan simpanan', icon: 'fa-piggy-bank', iconWrap: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
@@ -1606,7 +1864,8 @@
             renderHomeFeatureWidgets();
         }
 
-        // Widget placeholder di Homepage — hanya muncul untuk ciri yang diaktifkan
+        // Widget di Homepage — hanya muncul untuk ciri yang diaktifkan.
+        // "Sasaran Simpanan" dapat widget istimewa (graf + info sebenar); ciri lain kekal placeholder ringkas.
         function renderHomeFeatureWidgets() {
             const container = document.getElementById('home-feature-widgets');
             if (!container) return;
@@ -1614,17 +1873,44 @@
 
             if (active.length === 0) { container.innerHTML = ''; return; }
 
-            container.innerHTML = active.map(f => `
-                <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-3 fade-in-widget">
-                    <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
-                        <p class="text-[10px] text-slate-400">Ciri ini sedang dibangunkan. Boleh matikan dari tab Profil.</p>
-                    </div>
-                    <button type="button" onclick="disableFeatureFromHome('${f.id}')" class="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center">
-                        <i class="fas fa-times text-[10px]"></i>
-                    </button>
-                </div>`).join('');
+            container.innerHTML = active.map(f => {
+                if (f.id === 'savings-goal') {
+                    return `
+                        <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 fade-in-widget">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
+                                    <p id="home-savings-goal-info" class="text-[10px] text-slate-400">Memuatkan...</p>
+                                </div>
+                                <button type="button" onclick="openSavingsGoalModal()" class="w-7 h-7 flex-shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                    <i class="fas fa-expand text-[9px]"></i>
+                                </button>
+                                <button type="button" onclick="disableFeatureFromHome('savings-goal')" class="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center">
+                                    <i class="fas fa-times text-[10px]"></i>
+                                </button>
+                            </div>
+                            <div class="relative h-16 w-full">
+                                <canvas id="homeSavingsGoalChart"></canvas>
+                            </div>
+                        </div>`;
+                }
+                return `
+                    <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-3 fade-in-widget">
+                        <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
+                            <p class="text-[10px] text-slate-400">Ciri ini sedang dibangunkan. Boleh matikan dari tab Profil.</p>
+                        </div>
+                        <button type="button" onclick="disableFeatureFromHome('${f.id}')" class="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center">
+                            <i class="fas fa-times text-[10px]"></i>
+                        </button>
+                    </div>`;
+            }).join('');
+
+            if (enabledFeatures.includes('savings-goal')) {
+                renderHomeSavingsGoalWidget();
+            }
         }
 
         function disableFeatureFromHome(id) {
