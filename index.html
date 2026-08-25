@@ -3761,10 +3761,19 @@
         }
 
         // --- CORE LOGIC & RENDER ---
+        function getGajiCycleStart(todayStr) {
+            const gajiDates = transactions
+                .filter(t => t.type === 'income' && t.category === 'Gaji' && t.date <= todayStr)
+                .map(t => t.date)
+                .sort();
+            return gajiDates.length ? gajiDates[gajiDates.length - 1] : null;
+        }
+
         function calculateFinance() {
             const todayStr = getLocalYYYYMMDD();
             const currentMonthStr = todayStr.substring(0, 7);
-            
+            const gajiStartStr = getGajiCycleStart(todayStr);
+
             let surplus = 0;
             if (appPlan.carryForward) {
                 const pastTx = transactions.filter(t => t.date.substring(0, 7) < currentMonthStr);
@@ -3776,24 +3785,40 @@
                 if(surplus < 0) surplus = 0;
             }
 
+            let periodStartStr, periodEndStr;
+            if (gajiStartStr) {
+                const [gy, gm, gd] = gajiStartStr.split('-').map(Number);
+                const endD = new Date(gy, gm, gd - 1);
+                periodStartStr = gajiStartStr;
+                periodEndStr = endD.getFullYear() + '-' + String(endD.getMonth() + 1).padStart(2, '0') + '-' + String(endD.getDate()).padStart(2, '0');
+            } else {
+                const now0 = new Date();
+                const lastDay = new Date(now0.getFullYear(), now0.getMonth() + 1, 0).getDate();
+                periodStartStr = currentMonthStr + '-01';
+                periodEndStr = currentMonthStr + '-' + String(lastDay).padStart(2, '0');
+            }
+
             let cSpentBf = 0, spentToday = 0, cInc = 0;
-            transactions.filter(t => t.date.startsWith(currentMonthStr)).forEach(t => {
+            transactions.filter(t => t.date >= periodStartStr && t.date <= periodEndStr).forEach(t => {
                 if (t.type === 'expense') { t.date === todayStr ? spentToday += t.amount : cSpentBf += t.amount; }
                 else { cInc += t.amount; }
             });
 
             const currentTopup = budgetTopups[currentMonthStr] || 0;
             const totalFunds = appPlan.monthlyBudget + currentTopup + surplus + cInc;
-            const now = new Date();
-            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const daysRem = daysInMonth - now.getDate() + 1;
+
+            const [ey, em, ed] = periodEndStr.split('-').map(Number);
+            const [ty, tm, td] = todayStr.split('-').map(Number);
+            const endDateObj = new Date(ey, em - 1, ed);
+            const todayDateObj = new Date(ty, tm - 1, td);
+            const daysRem = Math.max(1, Math.round((endDateObj - todayDateObj) / 86400000) + 1);
 
             const remBeforeToday = totalFunds - cSpentBf;
             const limit = remBeforeToday > 0 ? (remBeforeToday / daysRem) : 0;
             const balance = limit - spentToday;
             const currentSpent = cSpentBf + spentToday;
 
-            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem, currentTopup };
+            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem, currentTopup, cycleActive: !!gajiStartStr };
         }
 
         function refreshData() {
