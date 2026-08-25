@@ -950,6 +950,63 @@
                     </div>
                 </div>
 
+                <!-- ===== SIMPANAN DARI GAJI (potongan terus) ===== -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek mb-6">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center flex-shrink-0"><i class="fas fa-wallet text-[10px]"></i></span>
+                        <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Simpanan Dari Gaji</p>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mb-3">Kira terus jumlah yang perlu disisih daripada gaji bulanan anda — sebelum dibelanjakan.</p>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 mb-2">
+                        <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Jumlah Gaji (RM)</label>
+                        <input type="number" id="salary-savings-income" placeholder="0.00" step="0.01" min="0" inputmode="decimal"
+                            oninput="renderSalarySavings()"
+                            class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-base">
+                    </div>
+
+                    <!-- Senarai Komitmen (+ / -) -->
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 mb-2">
+                        <label class="text-[9px] uppercase font-bold text-slate-400 block mb-2">Komitmen Bulanan (ditolak dahulu)</label>
+                        <div class="flex gap-1.5 mb-2">
+                            <input type="text" id="commitment-name" placeholder="Cth: Bayaran Kereta" autocomplete="off"
+                                class="flex-1 min-w-0 bg-white dark:bg-slate-800 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-slate-800 dark:text-white outline-none">
+                            <input type="number" id="commitment-amount" placeholder="RM" step="0.01" min="0" inputmode="decimal"
+                                class="w-20 flex-shrink-0 bg-white dark:bg-slate-800 rounded-lg px-2 py-2 text-[11px] font-bold text-slate-800 dark:text-white outline-none text-right">
+                            <button type="button" onclick="addCommitment()" class="w-9 flex-shrink-0 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center"><i class="fas fa-plus text-[11px]"></i></button>
+                        </div>
+                        <ul id="commitment-list" class="space-y-1.5 max-h-36 overflow-y-auto"></ul>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jumlah Komitmen</span>
+                            <span class="text-[11px] font-extrabold text-rose-500">- RM <span id="commitment-total">0.00</span></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 mb-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Baki Gaji (Selepas Komitmen)</span>
+                            <span class="text-[12px] font-extrabold text-slate-700 dark:text-slate-200">RM <span id="salary-savings-net">0.00</span></span>
+                        </div>
+                        <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Kadar Simpanan (%)</label>
+                        <input type="number" id="salary-savings-pct" placeholder="20" step="1" min="0" max="100" inputmode="decimal"
+                            oninput="renderSalarySavings()"
+                            class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-base">
+                    </div>
+
+                    <div class="flex gap-2 mb-3">
+                        <button type="button" onclick="setSalarySavingsPct(10)" class="flex-1 py-1.5 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">10%</button>
+                        <button type="button" onclick="setSalarySavingsPct(20)" class="flex-1 py-1.5 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">20%</button>
+                        <button type="button" onclick="setSalarySavingsPct(30)" class="flex-1 py-1.5 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">30%</button>
+                    </div>
+
+                    <div class="rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 p-3 text-white">
+                        <p class="text-[10px] uppercase tracking-wider font-semibold opacity-80">Simpan Setiap Bulan</p>
+                        <p class="text-xl font-extrabold mt-0.5">RM <span id="salary-savings-amount">0.00</span></p>
+                        <p id="salary-savings-formula" class="text-[10px] opacity-90 mt-1"></p>
+                    </div>
+                    <p class="text-[9px] text-slate-400 mt-2 leading-relaxed">Cara kiraan: <b>Baki Gaji = Jumlah Gaji − Jumlah Komitmen</b>, kemudian <b>Simpanan = Baki Gaji × Kadar Simpanan (%)</b>. Cth: gaji RM3,000 − komitmen RM800 = RM2,200 × 20% = RM440 disisih terus sebelum berbelanja (kaedah "pay yourself first").</p>
+                </div>
+
                 <!-- Graf linear bulanan -->
                 <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Trend Surplus &amp; Sasaran (6 Bulan)</h4>
                 <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek">
@@ -1929,9 +1986,83 @@
             return { inc, exp, surplus: inc - exp };
         }
 
+        // --- Simpanan Dari Gaji (tolak komitmen dahulu, baru % daripada baki) ---
+        let salaryCommitments = JSON.parse(localStorage.getItem('poket_salary_commitments')) || [];
+        function saveSalaryCommitments() { localStorage.setItem('poket_salary_commitments', JSON.stringify(salaryCommitments)); }
+
+        function addCommitment() {
+            const nameEl = document.getElementById('commitment-name');
+            const amtEl = document.getElementById('commitment-amount');
+            const name = nameEl.value.trim();
+            const amount = parseFloat(amtEl.value);
+            if (!name) { alert('Sila masukkan nama komitmen.'); return; }
+            if (isNaN(amount) || amount <= 0) { alert('Sila masukkan jumlah komitmen yang sah.'); return; }
+
+            salaryCommitments.push({ id: Date.now(), name, amount });
+            saveSalaryCommitments();
+            nameEl.value = ''; amtEl.value = '';
+            renderSalarySavings();
+        }
+
+        function removeCommitment(id) {
+            salaryCommitments = salaryCommitments.filter(c => c.id !== id);
+            saveSalaryCommitments();
+            renderSalarySavings();
+        }
+
+        function getTotalCommitments() { return salaryCommitments.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0); }
+
+        function setSalarySavingsPct(pct) {
+            document.getElementById('salary-savings-pct').value = pct;
+            renderSalarySavings();
+        }
+
+        function renderSalarySavings() {
+            const incomeEl = document.getElementById('salary-savings-income');
+            const pctEl = document.getElementById('salary-savings-pct');
+            if (!incomeEl || !pctEl) return;
+
+            localStorage.setItem('poket_salary_savings_income', incomeEl.value);
+            localStorage.setItem('poket_salary_savings_pct', pctEl.value);
+
+            // Senarai komitmen
+            const listEl = document.getElementById('commitment-list');
+            listEl.innerHTML = salaryCommitments.length === 0
+                ? '<li class="text-[10px] text-slate-400 text-center py-1.5">Belum ada komitmen ditambah.</li>'
+                : salaryCommitments.map(c => `
+                    <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg px-2.5 py-1.5">
+                        <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(c.name)}</span>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span class="text-[11px] font-bold text-rose-500">RM ${(parseFloat(c.amount) || 0).toFixed(2)}</span>
+                            <button type="button" onclick="removeCommitment(${c.id})" class="w-5 h-5 rounded-full bg-rose-50 dark:bg-rose-500/15 text-rose-500 flex items-center justify-center"><i class="fas fa-minus text-[9px]"></i></button>
+                        </div>
+                    </li>`).join('');
+
+            const income = parseFloat(incomeEl.value) || 0;
+            const pct = parseFloat(pctEl.value) || 0;
+            const totalCommitment = getTotalCommitments();
+            const net = Math.max(0, income - totalCommitment);
+            const amount = net * (pct / 100);
+
+            document.getElementById('commitment-total').innerText = totalCommitment.toFixed(2);
+            document.getElementById('salary-savings-net').innerText = net.toFixed(2);
+            document.getElementById('salary-savings-amount').innerText = amount.toFixed(2);
+            document.getElementById('salary-savings-formula').innerText =
+                income > 0
+                    ? `RM ${income.toFixed(2)} − RM ${totalCommitment.toFixed(2)} = RM ${net.toFixed(2)} × ${pct}% = RM ${amount.toFixed(2)}/bulan`
+                    : 'Masukkan jumlah gaji untuk kira simpanan.';
+        }
+
         function renderSavingsGoal() {
             const canvas = document.getElementById('savingsGoalChart');
             if (!canvas) return;
+
+            // Muat semula input Simpanan Dari Gaji (kekal ingat nilai terakhir)
+            const savedIncome = localStorage.getItem('poket_salary_savings_income');
+            const savedPct = localStorage.getItem('poket_salary_savings_pct');
+            document.getElementById('salary-savings-income').value = savedIncome || '';
+            document.getElementById('salary-savings-pct').value = savedPct || '20';
+            renderSalarySavings();
 
             const now = new Date();
             const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -2881,7 +3012,42 @@
             const list = [...debts];
             if (debtSortStrategy === 'avalanche') list.sort((a, b) => b.apr - a.apr);       // APR tinggi -> rendah
             else if (debtSortStrategy === 'snowball') list.sort((a, b) => getDebtCurrentBalance(a) - getDebtCurrentBalance(b)); // baki rendah -> tinggi
-            return list; // 'original' -> kekal urutan asal (tiada susun)
+            return list; // 'original' -> kekal urutan asal (boleh disusun semula secara manual)
+        }
+
+        // --- Susun semula senarai hutang secara manual (mod "Senarai Asal") ---
+        function moveDebt(id, dir) {
+            const from = debts.findIndex(d => d.id === id);
+            const to = from + dir;
+            if (from === -1 || to < 0 || to >= debts.length) return;
+            [debts[from], debts[to]] = [debts[to], debts[from]];
+            saveDebts();
+            renderDebtPlan();
+        }
+
+        let debtDragId = null;
+        function debtDragStart(ev, id) {
+            debtDragId = id;
+            ev.dataTransfer.effectAllowed = 'move';
+            try { ev.dataTransfer.setData('text/plain', String(id)); } catch (e) {}
+            ev.currentTarget.closest('li').classList.add('opacity-50');
+        }
+        function debtDragOver(ev) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; }
+        function debtDrop(ev, targetId) {
+            ev.preventDefault();
+            if (debtDragId === null || debtDragId === targetId) return;
+            const from = debts.findIndex(d => d.id === debtDragId);
+            const to = debts.findIndex(d => d.id === targetId);
+            if (from === -1 || to === -1) return;
+            const [moved] = debts.splice(from, 1);
+            debts.splice(to, 0, moved);
+            saveDebts();
+            debtDragId = null;
+            renderDebtPlan();
+        }
+        function debtDragEnd(ev) {
+            debtDragId = null;
+            document.querySelectorAll('#debt-list li').forEach(li => li.classList.remove('opacity-50'));
         }
 
         function renderDebtPlan() {
@@ -2936,6 +3102,14 @@
                                 <button onclick="deleteDebt(${d.id})" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-slate-700/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-trash-alt text-[10px]"></i></button>
                             </div>
                         </div>
+                        ${debtSortStrategy === 'original' ? `
+                        <div class="flex items-center gap-2 mt-2 -mb-1" draggable="true"
+                            ondragstart="debtDragStart(event, ${d.id})" ondragover="debtDragOver(event)" ondrop="debtDrop(event, ${d.id})" ondragend="debtDragEnd(event)">
+                            <span class="cursor-move text-slate-300 dark:text-slate-500 w-6 h-6 flex items-center justify-center flex-shrink-0"><i class="fas fa-grip-lines text-[11px]"></i></span>
+                            <span class="text-[9px] text-slate-400 flex-1">Seret untuk susun semula</span>
+                            <button type="button" onclick="moveDebt(${d.id},-1)" ${i === 0 ? 'disabled' : ''} class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${i === 0 ? 'text-slate-200 dark:text-slate-700' : 'text-slate-400 hover:text-indigo-500 bg-slate-50 dark:bg-slate-700/50'}"><i class="fas fa-chevron-up text-[10px]"></i></button>
+                            <button type="button" onclick="moveDebt(${d.id},1)" ${i === sorted.length - 1 ? 'disabled' : ''} class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${i === sorted.length - 1 ? 'text-slate-200 dark:text-slate-700' : 'text-slate-400 hover:text-indigo-500 bg-slate-50 dark:bg-slate-700/50'}"><i class="fas fa-chevron-down text-[10px]"></i></button>
+                        </div>` : ''}
                         <div class="flex justify-between items-baseline mt-3 mb-1">
                             <span class="text-[10px] text-slate-400">Baki semasa</span>
                             <span class="font-bold ${settled ? 'text-emerald-500' : 'text-rose-500'} text-sm">RM ${current.toFixed(2)}</span>
