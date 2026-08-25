@@ -968,13 +968,25 @@
                     <!-- Senarai Komitmen (+ / -) -->
                     <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 mb-2">
                         <label class="text-[9px] uppercase font-bold text-slate-400 block mb-2">Komitmen Bulanan (ditolak dahulu)</label>
-                        <div class="flex gap-1.5 mb-2">
+
+                        <!-- Suis: Manual / Dari Pelan Hutang -->
+                        <div class="flex bg-white dark:bg-slate-800 p-1 rounded-xl mb-2">
+                            <button type="button" onclick="setCommitmentSource('manual')" id="commitment-src-manual" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all">Manual</button>
+                            <button type="button" onclick="setCommitmentSource('debt')" id="commitment-src-debt" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all">Dari Pelan Hutang</button>
+                        </div>
+
+                        <div id="commitment-manual-form" class="flex gap-1.5 mb-2">
                             <input type="text" id="commitment-name" placeholder="Cth: Bayaran Kereta" autocomplete="off"
                                 class="flex-1 min-w-0 bg-white dark:bg-slate-800 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-slate-800 dark:text-white outline-none">
                             <input type="number" id="commitment-amount" placeholder="RM" step="0.01" min="0" inputmode="decimal"
                                 class="w-20 flex-shrink-0 bg-white dark:bg-slate-800 rounded-lg px-2 py-2 text-[11px] font-bold text-slate-800 dark:text-white outline-none text-right">
                             <button type="button" onclick="addCommitment()" class="w-9 flex-shrink-0 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center"><i class="fas fa-plus text-[11px]"></i></button>
                         </div>
+
+                        <div id="commitment-debt-picker" class="hidden mb-2">
+                            <ul id="commitment-debt-list" class="space-y-1.5"></ul>
+                        </div>
+
                         <ul id="commitment-list" class="space-y-1.5 max-h-36 overflow-y-auto"></ul>
                         <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                             <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jumlah Komitmen</span>
@@ -2010,6 +2022,61 @@
             renderSalarySavings();
         }
 
+        // --- Sumber komitmen: Manual atau Dari Pelan Pembayaran Hutang ---
+        let commitmentSource = 'manual';
+        function setCommitmentSource(src) {
+            commitmentSource = src;
+            document.getElementById('commitment-manual-form').classList.toggle('hidden', src !== 'manual');
+            document.getElementById('commitment-debt-picker').classList.toggle('hidden', src !== 'debt');
+            ['manual', 'debt'].forEach(s => {
+                const btn = document.getElementById(`commitment-src-${s}`);
+                if (!btn) return;
+                btn.className = s === src
+                    ? 'flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-indigo-500 text-white transition-all'
+                    : 'flex-1 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 dark:text-slate-400 transition-all';
+            });
+            if (src === 'debt') renderCommitmentDebtPicker();
+        }
+
+        // Senaraikan hutang aktif dari Pelan Pembayaran Hutang (bayaran minimum) untuk dipilih sebagai komitmen
+        function renderCommitmentDebtPicker() {
+            const listEl = document.getElementById('commitment-debt-list');
+            if (!listEl) return;
+            const active = (typeof getActiveDebts === 'function') ? getActiveDebts() : [];
+
+            if (active.length === 0) {
+                listEl.innerHTML = '<li class="text-[10px] text-slate-400 text-center py-2">Tiada hutang aktif dalam Pelan Pembayaran Hutang.</li>';
+                return;
+            }
+
+            listEl.innerHTML = active.map(d => {
+                const already = salaryCommitments.some(c => c.debtId === d.id);
+                const min = getDebtMin(d);
+                return `
+                    <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg px-2.5 py-2">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(d.name)}</p>
+                            <p class="text-[9px] text-slate-400">Min RM ${min.toFixed(2)}/bln • APR ${d.apr.toFixed(1)}%</p>
+                        </div>
+                        <button type="button" onclick="addCommitmentFromDebt(${d.id})" ${already ? 'disabled' : ''}
+                            class="flex-shrink-0 px-2.5 py-1.5 rounded-lg text-[9px] font-bold flex items-center gap-1 ${already ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-500' : 'bg-indigo-500 hover:bg-indigo-600 text-white'}">
+                            <i class="fas ${already ? 'fa-check' : 'fa-plus'} text-[9px]"></i>${already ? 'Ditambah' : 'Tambah'}
+                        </button>
+                    </li>`;
+            }).join('');
+        }
+
+        function addCommitmentFromDebt(debtId) {
+            const debt = debts.find(d => d.id === debtId);
+            if (!debt) return;
+            if (salaryCommitments.some(c => c.debtId === debtId)) return;
+
+            salaryCommitments.push({ id: Date.now(), name: debt.name, amount: getDebtMin(debt), debtId: debt.id });
+            saveSalaryCommitments();
+            renderCommitmentDebtPicker();
+            renderSalarySavings();
+        }
+
         function getTotalCommitments() { return salaryCommitments.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0); }
 
         function setSalarySavingsPct(pct) {
@@ -2058,6 +2125,7 @@
             if (!canvas) return;
 
             // Muat semula input Simpanan Dari Gaji (kekal ingat nilai terakhir)
+            setCommitmentSource('manual');
             const savedIncome = localStorage.getItem('poket_salary_savings_income');
             const savedPct = localStorage.getItem('poket_salary_savings_pct');
             document.getElementById('salary-savings-income').value = savedIncome || '';
