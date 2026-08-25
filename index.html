@@ -713,6 +713,19 @@
                         <input type="checkbox" id="input-is-bill" class="w-5 h-5 accent-amber-500">
                     </label>
 
+                    <label class="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 cursor-pointer">
+                        <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300"><i class="fas fa-landmark text-rose-400 mr-1"></i>Tandakan sebagai Hutang Bank Wajib</span>
+                        <input type="checkbox" id="input-is-debt" class="w-5 h-5 accent-rose-500" onchange="toggleDebtLinkSelect()">
+                    </label>
+
+                    <div id="debt-link-wrap" class="hidden bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Pilih Hutang (Pelan Pembayaran Hutang)</label>
+                        <select id="input-debt-select" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none text-sm font-medium">
+                            <option value="">- Pilih hutang -</option>
+                        </select>
+                        <p class="text-[9px] text-slate-400 px-2 pb-1">Jumlah rekod ini akan direkodkan terus sebagai pembayaran (principal paid) untuk hutang yang dipilih, dan baki akan dikemaskini automatik di Pelan Pembayaran Hutang.</p>
+                    </div>
+
                     <button type="submit" id="btn-submit-tx" class="w-full bg-slate-800 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-sleek hover:bg-slate-900 transition-all mt-4 text-sm tracking-wide">
                         SIMPAN REKOD
                     </button>
@@ -2679,7 +2692,7 @@
                 : list.map(p => `
                     <li class="flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 rounded-xl px-3 py-2">
                         <div>
-                            <p class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">- RM ${(parseFloat(p.amount) || 0).toFixed(2)}</p>
+                            <p class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">- RM ${(parseFloat(p.amount) || 0).toFixed(2)} ${p.txId ? '<span class="ml-1 text-[8px] font-bold uppercase tracking-wide bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-full align-middle">Auto dari rekod</span>' : ''}</p>
                             <p class="text-[9px] text-slate-400">${p.date ? parseLocalDateStr(p.date).toLocaleDateString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</p>
                         </div>
                         <button type="button" onclick="deleteDebtPayment(${p.id})" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 w-6 h-6 flex items-center justify-center"><i class="fas fa-trash-alt text-[10px]"></i></button>
@@ -2708,7 +2721,20 @@
 
         function deleteDebtPayment(pid) {
             const debt = debts.find(d => d.id === currentEditDebtId);
-            if (!debt || !confirm('Padam rekod pembayaran ini?')) return;
+            if (!debt) return;
+            const payment = getDebtPayments(debt).find(p => p.id === pid);
+            const msg = payment && payment.txId
+                ? 'Rekod pembayaran ini datang secara automatik dari Tambah Rekod (Hutang Bank Wajib). Padam di sini sahaja? (Rekod transaksi asal di Sejarah tidak akan dipadam, tapi tidak lagi dikira sebagai pembayaran hutang.)'
+                : 'Padam rekod pembayaran ini?';
+            if (!confirm(msg)) return;
+
+            // Jika pembayaran ini dipautkan dengan transaksi (Tambah Rekod), lerai pautan pada
+            // transaksi asal supaya ia tidak dijana semula secara automatik bila diedit kelak.
+            if (payment && payment.txId) {
+                const tx = transactions.find(t => t.id === payment.txId);
+                if (tx) { tx.isDebtPayment = false; tx.debtId = null; localStorage.setItem('poket_tx', JSON.stringify(transactions)); }
+            }
+
             debt.payments = getDebtPayments(debt).filter(p => p.id !== pid);
             saveDebts();
             renderDebtPayments();
@@ -3687,10 +3713,13 @@
         function prepareNewTx() {
             currentEditId = null;
             document.getElementById('form-add').reset();
-            document.getElementById('input-date').value = selectedCalendarDateStr; 
+            document.getElementById('input-date').value = selectedCalendarDateStr;
             document.getElementById('input-amount').value = '';
             calcClear();
             setInputType('expense');
+            populateDebtLinkSelect();
+            document.getElementById('input-is-debt').checked = false;
+            toggleDebtLinkSelect();
             document.getElementById('modal-title').innerText = "Tambah Rekod";
             document.getElementById('btn-submit-tx').innerText = "SIMPAN REKOD";
             openAddModal();
@@ -3699,22 +3728,92 @@
         function editTx(id) {
             const tx = transactions.find(t => t.id === id);
             if (!tx) return;
-            
+
             currentEditId = id;
             setInputType(tx.type);
             document.getElementById('input-date').value = tx.date;
-            
+
             setTimeout(() => { document.getElementById('input-category').value = tx.category; }, 50);
 
             document.getElementById('input-text').value = tx.text;
             document.getElementById('input-is-bill').checked = !!tx.isBill;
+            populateDebtLinkSelect();
+            document.getElementById('input-is-debt').checked = !!tx.isDebtPayment;
+            toggleDebtLinkSelect();
+            if (tx.isDebtPayment && tx.debtId) document.getElementById('input-debt-select').value = tx.debtId;
             document.getElementById('input-amount').value = tx.amount.toFixed(2);
             calcExpr = tx.amount.toString();
             document.getElementById('calc-display').innerText = calcExpr;
-            
+
             document.getElementById('modal-title').innerText = "Kemaskini Rekod";
             document.getElementById('btn-submit-tx').innerText = "KEMASKINI REKOD";
             openAddModal();
+        }
+
+        // --- Hutang Bank Wajib: pautkan rekod transaksi terus ke Pelan Pembayaran Hutang ---
+        function toggleDebtLinkSelect() {
+            const cb = document.getElementById('input-is-debt');
+            const wrap = document.getElementById('debt-link-wrap');
+            if (!cb || !wrap) return;
+            wrap.classList.toggle('hidden', !cb.checked);
+        }
+
+        function populateDebtLinkSelect() {
+            const sel = document.getElementById('input-debt-select');
+            if (!sel) return;
+            const current = sel.value;
+            const list = debts.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            sel.innerHTML = '<option value="">- Pilih hutang -</option>' +
+                list.map(d => `<option value="${d.id}">${escapeHtml(d.name)} (Baki: RM ${getDebtCurrentBalance(d).toFixed(2)})</option>`).join('');
+            if (list.some(d => String(d.id) === String(current))) sel.value = current;
+        }
+
+        // Sync rekod pembayaran hutang (dari Tambah Rekod) ke dalam objek `debts` supaya
+        // Pelan Pembayaran Hutang terus dikemaskini automatik. `txId` dipakai sebagai penanda
+        // supaya rekod boleh dikemaskini/dipadam semula bila transaksi diedit/dipadam.
+        function syncDebtPaymentFromTx(txId, txData) {
+            let changed = false;
+            // Buang dahulu rekod pembayaran lama (jika ada) yang dipautkan ke transaksi ini,
+            // di mana-mana hutang, supaya tiada pembayaran berganda bila diedit/ditukar hutang.
+            debts.forEach(d => {
+                if (!Array.isArray(d.payments)) return;
+                const before = d.payments.length;
+                d.payments = d.payments.filter(p => p.txId !== txId);
+                if (d.payments.length !== before) changed = true;
+            });
+
+            // Tambah semula rekod pembayaran jika rekod ditandakan sebagai Hutang Bank Wajib
+            if (txData.isDebtPayment && txData.debtId) {
+                const debt = debts.find(d => String(d.id) === String(txData.debtId));
+                if (debt) {
+                    if (!Array.isArray(debt.payments)) debt.payments = [];
+                    debt.payments.push({ id: Date.now() + Math.floor(Math.random() * 1000), txId, amount: txData.amount, date: txData.date });
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                saveDebts();
+                if (typeof renderDebtPlan === 'function') renderDebtPlan();
+                if (typeof renderHomeDebtPlanWidget === 'function') renderHomeDebtPlanWidget();
+                if (currentEditDebtId) renderDebtPayments();
+            }
+        }
+
+        function removeDebtPaymentByTxId(txId) {
+            let changed = false;
+            debts.forEach(d => {
+                if (!Array.isArray(d.payments)) return;
+                const before = d.payments.length;
+                d.payments = d.payments.filter(p => p.txId !== txId);
+                if (d.payments.length !== before) changed = true;
+            });
+            if (changed) {
+                saveDebts();
+                if (typeof renderDebtPlan === 'function') renderDebtPlan();
+                if (typeof renderHomeDebtPlanWidget === 'function') renderHomeDebtPlanWidget();
+                if (currentEditDebtId) renderDebtPayments();
+            }
         }
 
         // --- FORM TOGGLE & CALCULATOR ---
@@ -3836,28 +3935,43 @@
             const amt = parseFloat(document.getElementById('input-amount').value);
             if (isNaN(amt) || amt <= 0) return alert('Sila masukkan jumlah sah.');
             
+            const isExpense = document.getElementById('input-type').value === 'expense';
+            const isDebtChecked = isExpense && document.getElementById('input-is-debt').checked;
+            const debtSelectVal = document.getElementById('input-debt-select').value;
+            if (isDebtChecked && !debtSelectVal) { alert('Sila pilih hutang yang berkaitan untuk rekod Hutang Bank Wajib ini.'); return; }
+
             const txData = {
                 date: document.getElementById('input-date').value,
                 category: document.getElementById('input-category').value,
                 text: document.getElementById('input-text').value,
                 amount: amt,
                 type: document.getElementById('input-type').value,
-                isBill: document.getElementById('input-type').value === 'expense' && document.getElementById('input-is-bill').checked
+                isBill: isExpense && document.getElementById('input-is-bill').checked,
+                isDebtPayment: isDebtChecked && !!debtSelectVal,
+                debtId: isDebtChecked && debtSelectVal ? debtSelectVal : null
             };
 
+            let txId;
             if (currentEditId) {
                 const index = transactions.findIndex(t => t.id === currentEditId);
                 if(index !== -1) transactions[index] = { ...transactions[index], ...txData };
-                currentEditId = null; 
+                txId = currentEditId;
+                currentEditId = null;
             } else {
-                transactions.push({ id: Date.now(), ...txData });
+                txId = Date.now();
+                transactions.push({ id: txId, ...txData });
             }
 
             localStorage.setItem('poket_tx', JSON.stringify(transactions));
-            selectedCalendarDateStr = txData.date; 
-            
+            selectedCalendarDateStr = txData.date;
+
+            // Cross-check & auto-update ke Pelan Pembayaran Hutang
+            syncDebtPaymentFromTx(txId, txData);
+
             document.getElementById('input-text').value = '';
             document.getElementById('input-amount').value = '';
+            document.getElementById('input-is-debt').checked = false;
+            toggleDebtLinkSelect();
             calcClear();
             closeAddModal();
             refreshData();
@@ -3867,6 +3981,9 @@
             if(confirm('Padam rekod ini?')) {
                 transactions = transactions.filter(t => t.id !== id);
                 localStorage.setItem('poket_tx', JSON.stringify(transactions));
+                // Buang juga rekod pembayaran hutang yang dipautkan (jika ada) supaya
+                // Pelan Pembayaran Hutang kekal tepat.
+                removeDebtPaymentByTxId(id);
                 refreshData();
             }
         }
