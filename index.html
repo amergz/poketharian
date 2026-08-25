@@ -374,6 +374,14 @@
             <div class="pt-10 pb-6 px-6">
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Statistik</h2>
 
+                <div id="bill-stat-card" class="hidden bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-2xl p-3 mb-4 flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"><i class="fas fa-bell text-xs"></i></span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[10px] font-bold text-amber-700 dark:text-amber-300">Bil Wajib Bulanan (termasuk dalam anggaran belanja)</p>
+                        <p class="text-sm font-extrabold text-amber-600 dark:text-amber-400">RM <span id="bill-stat-total">0.00</span>/bln</p>
+                    </div>
+                </div>
+
                 <div class="flex bg-slate-200/50 dark:bg-slate-800 p-1.5 rounded-2xl mb-6">
                     <button onclick="setStatFilter('monthly')" id="stat-monthly" class="flex-1 py-2.5 rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 font-bold shadow-sm text-xs transition-all">Bulan Ini</button>
                     <button onclick="setStatFilter('yearly')" id="stat-yearly" class="flex-1 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium text-xs transition-all">Tahun Ini</button>
@@ -700,6 +708,11 @@
                         </div>
                     </div>
 
+                    <label class="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 cursor-pointer">
+                        <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300"><i class="fas fa-bell text-amber-400 mr-1"></i>Tandakan sebagai Bil Bulanan Wajib</span>
+                        <input type="checkbox" id="input-is-bill" class="w-5 h-5 accent-amber-500">
+                    </label>
+
                     <button type="submit" id="btn-submit-tx" class="w-full bg-slate-800 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-sleek hover:bg-slate-900 transition-all mt-4 text-sm tracking-wide">
                         SIMPAN REKOD
                     </button>
@@ -1012,7 +1025,7 @@
                         <!-- Suis: Manual / Dari Pelan Hutang -->
                         <div class="flex bg-white dark:bg-slate-800 p-1 rounded-xl mb-2">
                             <button type="button" onclick="setCommitmentSource('manual')" id="commitment-src-manual" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all">Manual</button>
-                            <button type="button" onclick="setCommitmentSource('debt')" id="commitment-src-debt" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all">Dari Pelan Hutang</button>
+                            <button type="button" onclick="setCommitmentSource('debt')" id="commitment-src-debt" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all">Dari Pelan Hutang &amp; Bil Bulanan</button>
                         </div>
 
                         <div id="commitment-manual-form" class="flex gap-1.5 mb-2">
@@ -1070,6 +1083,41 @@
                         <canvas id="savingsGoalChart"></canvas>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MODAL: PERINGATAN BIL WAJIB (skrin penuh) -->
+        <!-- ========================================== -->
+        <div id="bill-reminder-modal" class="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-50 hidden flex-col slide-in-right-modal">
+            <div class="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-slate-100 dark:border-slate-700/50 px-5 py-4 flex items-center gap-3">
+                <button onclick="closeBillReminderModal()" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-arrow-left text-sm"></i>
+                </button>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 inline-flex items-center justify-center"><i class="fas fa-bell text-xs"></i></span>
+                    Peringatan Bil Wajib
+                </h3>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <p class="text-[10px] text-slate-400 mb-4">Bil bulanan wajib ditambah terus dari <b>Tambah Rekod</b> di Laman Utama — tandakan "Bil Bulanan Wajib" semasa rekod belanja. Jumlah berbeza tiap bulan mengikut rekod sebenar, dan turut dikira dalam <b>Statistik Belanja Bulanan</b> serta boleh ditarik ke <b>Simpanan Dari Gaji</b> sebagai komitmen.</p>
+
+                <div class="flex items-center justify-between mb-4">
+                    <button type="button" onclick="shiftBillMonth(-1)" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sleek text-slate-500 dark:text-slate-300 flex items-center justify-center"><i class="fas fa-chevron-left text-xs"></i></button>
+                    <span id="bill-reminder-month-label" class="text-sm font-bold text-slate-700 dark:text-white"></span>
+                    <button type="button" onclick="shiftBillMonth(1)" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sleek text-slate-500 dark:text-slate-300 flex items-center justify-center"><i class="fas fa-chevron-right text-xs"></i></button>
+                </div>
+
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Senarai Bil Bulanan</h4>
+                    <span class="text-[11px] font-extrabold text-amber-500">RM <span id="bill-reminder-total">0.00</span>/bln</span>
+                </div>
+                <ul id="bill-reminder-list" class="space-y-2"></ul>
+
+                <button type="button" onclick="closeBillReminderModal(); prepareNewTx(); setTimeout(()=>{ const cb=document.getElementById('input-is-bill'); if(cb) cb.checked = true; },60)" class="w-full mt-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors">
+                    <i class="fas fa-plus mr-1"></i>TAMBAH BIL BULANAN
+                </button>
             </div>
         </div>
 
@@ -2081,24 +2129,26 @@
             if (src === 'debt') renderCommitmentDebtPicker();
         }
 
-        // Senaraikan hutang aktif dari Pelan Pembayaran Hutang (bayaran minimum) untuk dipilih sebagai komitmen
+        // Senaraikan hutang aktif (Pelan Pembayaran Hutang) + Bil Bulanan Wajib (bulan semasa) untuk dipilih sebagai komitmen
         function renderCommitmentDebtPicker() {
             const listEl = document.getElementById('commitment-debt-list');
             if (!listEl) return;
-            const active = (typeof getActiveDebts === 'function') ? getActiveDebts() : [];
+            const activeDebts = (typeof getActiveDebts === 'function') ? getActiveDebts() : [];
+            const now = new Date();
+            const bills = (typeof getMonthlyBills === 'function') ? getMonthlyBills(now.getFullYear(), now.getMonth()) : [];
 
-            if (active.length === 0) {
-                listEl.innerHTML = '<li class="text-[10px] text-slate-400 text-center py-2">Tiada hutang aktif dalam Pelan Pembayaran Hutang.</li>';
+            if (activeDebts.length === 0 && bills.length === 0) {
+                listEl.innerHTML = '<li class="text-[10px] text-slate-400 text-center py-2">Tiada hutang aktif atau bil bulanan direkodkan lagi.</li>';
                 return;
             }
 
-            listEl.innerHTML = active.map(d => {
+            const debtRows = activeDebts.map(d => {
                 const already = salaryCommitments.some(c => c.debtId === d.id);
                 const min = getDebtMin(d);
                 return `
                     <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg px-2.5 py-2">
                         <div class="min-w-0">
-                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(d.name)}</p>
+                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate"><i class="fas fa-hand-holding-dollar text-orange-400 text-[9px] mr-1"></i>${escapeHtml(d.name)}</p>
                             <p class="text-[9px] text-slate-400">Min RM ${min.toFixed(2)}/bln • APR ${d.apr.toFixed(1)}%</p>
                         </div>
                         <button type="button" onclick="addCommitmentFromDebt(${d.id})" ${already ? 'disabled' : ''}
@@ -2107,6 +2157,23 @@
                         </button>
                     </li>`;
             }).join('');
+
+            const billRows = bills.map(b => {
+                const already = salaryCommitments.some(c => c.billId === b.id);
+                return `
+                    <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg px-2.5 py-2">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate"><i class="fas fa-bell text-amber-400 text-[9px] mr-1"></i>${escapeHtml(b.text)}</p>
+                            <p class="text-[9px] text-slate-400">Bil Bulanan • RM ${b.amount.toFixed(2)}</p>
+                        </div>
+                        <button type="button" onclick="addCommitmentFromBill(${b.id})" ${already ? 'disabled' : ''}
+                            class="flex-shrink-0 px-2.5 py-1.5 rounded-lg text-[9px] font-bold flex items-center gap-1 ${already ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-500' : 'bg-amber-500 hover:bg-amber-600 text-white'}">
+                            <i class="fas ${already ? 'fa-check' : 'fa-plus'} text-[9px]"></i>${already ? 'Ditambah' : 'Tambah'}
+                        </button>
+                    </li>`;
+            }).join('');
+
+            listEl.innerHTML = debtRows + billRows;
         }
 
         function addCommitmentFromDebt(debtId) {
@@ -2118,6 +2185,74 @@
             saveSalaryCommitments();
             renderCommitmentDebtPicker();
             renderSalarySavings();
+        }
+
+        function addCommitmentFromBill(billId) {
+            const bill = transactions.find(t => t.id === billId);
+            if (!bill) return;
+            if (salaryCommitments.some(c => c.billId === billId)) return;
+
+            salaryCommitments.push({ id: Date.now(), name: bill.text, amount: bill.amount, billId: bill.id });
+            saveSalaryCommitments();
+            renderCommitmentDebtPicker();
+            renderSalarySavings();
+        }
+
+        // --- Bil Bulanan Wajib: ditandakan terus dari rekod transaksi (isBill), berubah ikut bulan ---
+        function getMonthlyBills(year, month) {
+            return transactions.filter(t => t.type === 'expense' && t.isBill && (() => {
+                const d = new Date(t.date);
+                return d.getFullYear() === year && d.getMonth() === month;
+            })());
+        }
+        function getMonthlyBillTotal(year, month) {
+            return getMonthlyBills(year, month).reduce((s, t) => s + t.amount, 0);
+        }
+        let billViewDate = new Date();
+        function openBillReminderModal() {
+            billViewDate = new Date();
+            const modal = document.getElementById('bill-reminder-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            renderBillReminderList();
+        }
+        function closeBillReminderModal() {
+            const modal = document.getElementById('bill-reminder-modal');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+        }
+        function shiftBillMonth(dir) {
+            billViewDate = new Date(billViewDate.getFullYear(), billViewDate.getMonth() + dir, 1);
+            renderBillReminderList();
+        }
+        function renderBillReminderList() {
+            const y = billViewDate.getFullYear(), m = billViewDate.getMonth();
+            const labelEl = document.getElementById('bill-reminder-month-label');
+            if (labelEl) labelEl.innerText = `${monthNames[m]} ${y}`;
+            const bills = getMonthlyBills(y, m);
+            const total = bills.reduce((s, t) => s + t.amount, 0);
+            const totalEl = document.getElementById('bill-reminder-total');
+            if (totalEl) totalEl.innerText = total.toFixed(2);
+            const listEl = document.getElementById('bill-reminder-list');
+            if (!listEl) return;
+            listEl.innerHTML = bills.length === 0
+                ? '<li class="text-[10px] text-slate-400 text-center py-4">Tiada bil direkodkan untuk bulan ini. Tekan "Tambah Rekod" di Laman Utama &amp; tandakan sebagai Bil Bulanan Wajib.</li>'
+                : bills.map(t => `
+                    <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 shadow-sleek">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(t.text)}</p>
+                            <p class="text-[9px] text-slate-400">${escapeHtml(t.category)} • ${t.date}</p>
+                        </div>
+                        <span class="text-[11px] font-bold text-amber-500 flex-shrink-0">RM ${t.amount.toFixed(2)}</span>
+                    </li>`).join('');
+        }
+        function renderBillStatsCard() {
+            const card = document.getElementById('bill-stat-card');
+            if (!card) return;
+            const now = new Date();
+            const bills = getMonthlyBills(now.getFullYear(), now.getMonth());
+            const total = bills.reduce((s, t) => s + t.amount, 0);
+            card.classList.toggle('hidden', bills.length === 0);
+            const totalEl = document.getElementById('bill-stat-total');
+            if (totalEl) totalEl.innerText = total.toFixed(2);
         }
 
         function getTotalCommitments() { return salaryCommitments.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0); }
@@ -3352,7 +3487,7 @@
         const featureCatalog = [
             { id: 'import-bank', name: 'Import Penyata Bank', desc: 'Muat naik CSV Maybank / TnG terus jadi rekod', icon: 'fa-file-import', iconWrap: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' },
             { id: 'savings-goal', name: 'Sasaran Simpanan', desc: 'Tetapkan matlamat & jejak kemajuan simpanan', icon: 'fa-piggy-bank', iconWrap: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
-            { id: 'bill-reminder', name: 'Peringatan Bil Wajib', desc: 'Notifikasi automatik sebelum tarikh akhir bayaran', icon: 'fa-bell', iconWrap: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
+            { id: 'bill-reminder', name: 'Peringatan Bil Wajib', desc: 'Tandakan bil semasa Tambah Rekod — jumlah ikut bulan, masuk statistik & boleh jadi komitmen', icon: 'fa-bell', iconWrap: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
             { id: 'multi-account', name: 'Berbilang Akaun Bank', desc: 'Uruskan Maybank, TnG, CIMB dll berasingan', icon: 'fa-building-columns', iconWrap: 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400' },
             { id: 'forecast', name: 'Ramalan Bajet Bulanan', desc: 'Cadangan bajet ikut kategori — purata 3 bulan lepas', icon: 'fa-wand-magic-sparkles', iconWrap: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' },
             { id: '3d-costing', name: 'Pengiraan 3D Costing', desc: 'Kira & anggar kos projek/pembinaan secara 3D', icon: 'fa-cube', iconWrap: 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' },
@@ -3479,6 +3614,25 @@
                             </button>
                         </div>`;
                 }
+                if (f.id === 'bill-reminder') {
+                    return `
+                        <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 fade-in-widget">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
+                                    <p id="home-bill-reminder-info" class="text-[10px] text-slate-400">Memuatkan...</p>
+                                </div>
+                                <button type="button" onclick="openBillReminderModal()" class="w-7 h-7 flex-shrink-0 rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <i class="fas fa-expand text-[9px]"></i>
+                                </button>
+                                <button type="button" onclick="disableFeatureFromHome('bill-reminder')" class="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center">
+                                    <i class="fas fa-times text-[10px]"></i>
+                                </button>
+                            </div>
+                            <button type="button" onclick="prepareNewTx(); setTimeout(()=>{ const cb=document.getElementById('input-is-bill'); if(cb) cb.checked = true; },60)" class="w-full py-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold"><i class="fas fa-plus mr-1"></i>Tambah Bil Bulanan</button>
+                        </div>`;
+                }
                 return `
                     <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-3 fade-in-widget">
                         <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
@@ -3500,6 +3654,17 @@
             }
             if (enabledFeatures.includes('debt-plan')) {
                 renderHomeDebtPlanWidget();
+            }
+            if (enabledFeatures.includes('bill-reminder')) {
+                const infoEl = document.getElementById('home-bill-reminder-info');
+                if (infoEl) {
+                    const now = new Date();
+                    const bills = getMonthlyBills(now.getFullYear(), now.getMonth());
+                    const total = bills.reduce((s, t) => s + t.amount, 0);
+                    infoEl.innerText = bills.length === 0
+                        ? 'Belum ada bil bulan ini'
+                        : `${bills.length} bil • RM ${total.toFixed(2)}/bln`;
+                }
             }
         }
 
@@ -3542,6 +3707,7 @@
             setTimeout(() => { document.getElementById('input-category').value = tx.category; }, 50);
 
             document.getElementById('input-text').value = tx.text;
+            document.getElementById('input-is-bill').checked = !!tx.isBill;
             document.getElementById('input-amount').value = tx.amount.toFixed(2);
             calcExpr = tx.amount.toString();
             document.getElementById('calc-display').innerText = calcExpr;
@@ -3675,7 +3841,8 @@
                 category: document.getElementById('input-category').value,
                 text: document.getElementById('input-text').value,
                 amount: amt,
-                type: document.getElementById('input-type').value
+                type: document.getElementById('input-type').value,
+                isBill: document.getElementById('input-type').value === 'expense' && document.getElementById('input-is-bill').checked
             };
 
             if (currentEditId) {
@@ -4476,6 +4643,7 @@
         }
 
         function renderStatistics() {
+            if (typeof renderBillStatsCard === 'function') renderBillStatsCard();
             const filterStr = statFilter === 'monthly' ? getLocalYYYYMMDD().substring(0,7) : getLocalYYYYMMDD().substring(0,4);
             let tInc = 0, tExp = 0, expCat = {}, incCat = {};
             let expTxList = [], incTxList = [];
