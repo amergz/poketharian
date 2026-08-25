@@ -543,7 +543,11 @@
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2">
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50">
                         <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wider">Bajet Bulanan (RM)</label>
-                        <input type="number" id="setting-budget" class="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-200 border-transparent">
+                        <div class="flex gap-2">
+                            <input type="number" id="setting-budget" class="flex-1 min-w-0 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-200 border-transparent">
+                            <button type="button" onclick="addBudgetTopup()" title="Tambah dana ke bulan ini" class="w-12 flex-shrink-0 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-1.5">Tekan <b>+</b> untuk terus tambah dana ke <b>Total Dana Semasa</b> bulan ini sahaja (RM <span id="plan-topup-amt">0.00</span> ditambah bulan ini). Tekan <b>Simpan Tetapan</b> di bawah untuk tukar bajet asas berulang setiap bulan.</p>
                     </div>
 
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
@@ -1468,6 +1472,20 @@
 
         let transactions = JSON.parse(localStorage.getItem('poket_tx')) || [];
         let appPlan = JSON.parse(localStorage.getItem('poket_plan')) || { monthlyBudget: 0, carryForward: true };
+        // Tambahan dana ad-hoc ke Total Dana Semasa, disimpan ikut bulan (YYYY-MM) supaya tidak jadi bajet berulang
+        let budgetTopups = JSON.parse(localStorage.getItem('poket_budget_topups')) || {};
+        function saveBudgetTopups() { localStorage.setItem('poket_budget_topups', JSON.stringify(budgetTopups)); }
+        function addBudgetTopup() {
+            const input = document.getElementById('setting-budget');
+            const val = parseFloat(input.value);
+            if (isNaN(val) || val <= 0) { alert('Sila masukkan jumlah sah untuk ditambah.'); return; }
+            const monthStr = getLocalYYYYMMDD().substring(0, 7);
+            budgetTopups[monthStr] = (budgetTopups[monthStr] || 0) + val;
+            saveBudgetTopups();
+            input.value = '';
+            alert('RM ' + val.toFixed(2) + ' berjaya ditambah ke Total Dana Semasa bulan ini!');
+            refreshData();
+        }
         let currentTheme = localStorage.getItem('poket_theme') || 'light';
         
         let txFilter = 'daily';
@@ -3753,27 +3771,29 @@
                 const uniquePastMonths = [...new Set(pastTx.map(t => t.date.substring(0, 7)))];
                 let pInc = 0, pExp = 0;
                 pastTx.forEach(t => t.type === 'income' ? pInc += t.amount : pExp += t.amount);
-                surplus = (uniquePastMonths.length * appPlan.monthlyBudget) + pInc - pExp;
+                const pastBudgetTotal = uniquePastMonths.reduce((s, m) => s + appPlan.monthlyBudget + (budgetTopups[m] || 0), 0);
+                surplus = pastBudgetTotal + pInc - pExp;
                 if(surplus < 0) surplus = 0;
             }
 
             let cSpentBf = 0, spentToday = 0, cInc = 0;
-            transactions.filter(t => t.date.startsWith(currentMonthStr)).forEach(t => { 
+            transactions.filter(t => t.date.startsWith(currentMonthStr)).forEach(t => {
                 if (t.type === 'expense') { t.date === todayStr ? spentToday += t.amount : cSpentBf += t.amount; }
                 else { cInc += t.amount; }
             });
 
-            const totalFunds = appPlan.monthlyBudget + surplus + cInc;
+            const currentTopup = budgetTopups[currentMonthStr] || 0;
+            const totalFunds = appPlan.monthlyBudget + currentTopup + surplus + cInc;
             const now = new Date();
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRem = daysInMonth - now.getDate() + 1;
-            
+
             const remBeforeToday = totalFunds - cSpentBf;
             const limit = remBeforeToday > 0 ? (remBeforeToday / daysRem) : 0;
             const balance = limit - spentToday;
             const currentSpent = cSpentBf + spentToday;
 
-            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem };
+            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem, currentTopup };
         }
 
         function refreshData() {
@@ -3792,6 +3812,8 @@
             document.getElementById('plan-spent').innerText = f.currentSpent.toFixed(2);
             document.getElementById('plan-remaining').innerText = f.remaining.toFixed(2);
             document.getElementById('plan-surplus-amt').innerText = f.surplus.toFixed(2);
+            const topupEl = document.getElementById('plan-topup-amt');
+            if (topupEl) topupEl.innerText = f.currentTopup.toFixed(2);
 
             renderCalendar(); 
             renderWeeklyTrend();
