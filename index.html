@@ -1014,6 +1014,196 @@
         </div>
 
         <!-- ========================================== -->
+        <!-- MODAL: PELAN PEMBAYARAN HUTANG (skrin penuh) -->
+        <!-- ========================================== -->
+        <div id="debt-plan-modal" class="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-50 hidden flex-col slide-in-right-modal">
+            <div class="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-slate-100 dark:border-slate-700/50 px-5 py-4 flex items-center gap-3">
+                <button onclick="closeDebtPlanModal()" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-arrow-left text-sm"></i>
+                </button>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2 flex-1 min-w-0">
+                    <span class="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 inline-flex items-center justify-center flex-shrink-0"><i class="fas fa-hand-holding-dollar text-xs"></i></span>
+                    <span class="truncate">Pelan Pembayaran Hutang</span>
+                </h3>
+                <button onclick="openDebtFormModal()" class="w-9 h-9 rounded-full bg-orange-600 text-white flex items-center justify-center flex-shrink-0 press-scale">
+                    <i class="fas fa-plus text-sm"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <p class="text-[10px] text-slate-400 mb-5">Masukkan setiap hutang anda (nama, baki, APR &amp; bayaran minimum bulanan), pilih strategi, kemudian tetapkan bayaran tambahan untuk lihat bila anda bebas hutang.</p>
+
+                <!-- Ringkasan -->
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek">
+                        <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Jumlah Baki Hutang</p>
+                        <p class="text-lg font-extrabold text-rose-500 mt-1">RM <span id="debt-total-balance">0.00</span></p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek">
+                        <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Purata APR (Wajaran)</p>
+                        <p class="text-lg font-extrabold text-orange-500 mt-1"><span id="debt-avg-apr">0.0</span>%</p>
+                    </div>
+                </div>
+
+                <div id="debt-empty-state" class="hidden text-center py-10 mb-2">
+                    <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full mx-auto flex items-center justify-center text-slate-400 mb-3">
+                        <i class="fas fa-hand-holding-dollar text-2xl"></i>
+                    </div>
+                    <p class="text-slate-400 text-sm">Tiada hutang direkodkan.</p>
+                    <p class="text-slate-300 dark:text-slate-600 text-xs mt-1">Tekan + di atas untuk tambah hutang pertama anda</p>
+                </div>
+
+                <div id="debt-strategy-section">
+                    <!-- Suis strategi -->
+                    <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl mb-2">
+                        <button type="button" onclick="setDebtStrategy('avalanche')" id="debt-strategy-avalanche" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all">Avalanche</button>
+                        <button type="button" onclick="setDebtStrategy('snowball')" id="debt-strategy-snowball" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all">Snowball</button>
+                        <button type="button" onclick="setDebtStrategy('original')" id="debt-strategy-original" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold transition-all">Senarai Asal</button>
+                    </div>
+                    <p id="debt-strategy-desc" class="text-[10px] text-slate-400 mb-4"></p>
+
+                    <!-- ===== SIMULASI: JUMLAH BAYARAN BULANAN + BAYARAN TAMBAHAN ===== -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek mb-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 inline-flex items-center justify-center flex-shrink-0"><i class="fas fa-calculator text-[10px]"></i></span>
+                            <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Simulasi Bayaran Bulanan</p>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[11px] mb-3">
+                            <span class="text-slate-400">Jumlah bayaran minimum</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200">RM <span id="debt-total-min">0.00</span></span>
+                        </div>
+
+                        <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Bayaran Tambahan Setiap Bulan (RM)</label>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 font-bold text-sm">RM</span>
+                                <input type="number" id="debt-extra-payment" placeholder="0.00" step="10" min="0" inputmode="decimal"
+                                    oninput="onDebtExtraChange()"
+                                    class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-2">
+                            <button type="button" onclick="addDebtExtra(50)" class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">+50</button>
+                            <button type="button" onclick="addDebtExtra(100)" class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">+100</button>
+                            <button type="button" onclick="addDebtExtra(200)" class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">+200</button>
+                            <button type="button" onclick="setDebtExtra(0)" class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-400">Reset</button>
+                        </div>
+
+                        <div class="mt-3 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-3 text-white">
+                            <p class="text-[10px] uppercase tracking-wider font-semibold opacity-80">Jumlah Bayaran Bulanan Anda</p>
+                            <p class="text-xl font-extrabold mt-0.5">RM <span id="debt-monthly-total">0.00</span></p>
+                        </div>
+
+                        <div id="debt-sim-result" class="grid grid-cols-2 gap-2 mt-3"></div>
+                        <p id="debt-sim-note" class="text-[10px] text-slate-400 mt-2 leading-relaxed"></p>
+                    </div>
+
+                    <!-- ===== GRAF UNJURAN BAKI HUTANG ===== -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek mb-4">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center flex-shrink-0"><i class="fas fa-chart-line text-[10px]"></i></span>
+                            <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Unjuran Baki Hutang</p>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-3">Perbandingan: pelan anda (min + tambahan) vs bayaran minimum sahaja.</p>
+                        <div class="h-56"><canvas id="debt-projection-chart"></canvas></div>
+                        <div class="flex flex-wrap gap-3 mt-3 text-[10px]">
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-1 rounded-full bg-emerald-500 inline-block"></span><span class="text-slate-500 dark:text-slate-400">Pelan anda</span></span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-1 rounded-full bg-rose-400 inline-block"></span><span class="text-slate-500 dark:text-slate-400">Minimum sahaja</span></span>
+                        </div>
+                        <p id="debt-chart-note" class="text-[10px] text-slate-400 mt-2 leading-relaxed"></p>
+                    </div>
+
+                    <ul id="debt-list" class="space-y-3"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MODAL: BORANG TAMBAH/EDIT HUTANG (bottom sheet, atas debt-plan-modal) -->
+        <!-- ========================================== -->
+        <div id="debt-form-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] hidden flex-col justify-end transition-opacity duration-300 opacity-0">
+            <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-[2rem] p-6 slide-up-modal shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 id="debt-form-title" class="text-lg font-bold text-slate-800 dark:text-white">Tambah Hutang</h3>
+                    <button onclick="closeDebtFormModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Nama Hutang</label>
+                        <input type="text" id="debt-input-name" placeholder="Cth: Kad Kredit Maybank" autocomplete="off"
+                            class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Baki Hutang Semasa (RM)</label>
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-400 font-bold text-sm">RM</span>
+                            <input type="number" id="debt-input-balance" placeholder="0.00" step="0.01" min="0" inputmode="decimal"
+                                class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">APR / Kadar Faedah Tahunan (%)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="debt-input-apr" placeholder="0.0" step="0.1" min="0" max="100" inputmode="decimal"
+                                class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                            <span class="text-slate-400 font-bold text-sm">%</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-400">Bayaran Minimum Bulanan (RM)</label>
+                            <button type="button" onclick="suggestMinPayment()" class="text-[9px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/15 px-2 py-1 rounded-lg">
+                                Cadang 5%
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-400 font-bold text-sm">RM</span>
+                            <input type="number" id="debt-input-minpay" placeholder="0.00" step="0.01" min="0" inputmode="decimal"
+                                class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-lg">
+                        </div>
+                        <p id="debt-minpay-hint" class="text-[9px] text-slate-400 mt-1">Ansuran tetap bulanan atau bayaran minimum yang bank tetapkan.</p>
+                    </div>
+
+                    <!-- ===== REKOD PEMBAYARAN (edit sahaja) ===== -->
+                    <div id="debt-payment-section" class="hidden pt-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs font-bold text-slate-700 dark:text-slate-200"><i class="fas fa-receipt text-[10px] text-emerald-500 mr-1"></i>Payment Made</p>
+                            <span class="text-[10px] text-slate-400">Baki semasa: <b class="text-rose-500">RM <span id="debt-form-current-balance">0.00</span></b></span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                                <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Principal Paid (RM)</label>
+                                <input type="number" id="debt-payment-amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal"
+                                    class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-base">
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                                <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Date</label>
+                                <input type="date" id="debt-payment-date"
+                                    class="w-full bg-transparent text-slate-800 dark:text-white outline-none font-bold text-xs">
+                            </div>
+                        </div>
+                        <button type="button" onclick="addDebtPayment()" class="w-full mt-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold transition-colors">
+                            <i class="fas fa-plus mr-1"></i>REKOD PEMBAYARAN
+                        </button>
+                        <ul id="debt-payment-list" class="mt-3 space-y-1.5 max-h-40 overflow-y-auto"></ul>
+                    </div>
+                </div>
+
+                <button type="button" onclick="saveDebtForm()" id="debt-form-submit-btn" class="w-full bg-slate-800 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-sleek hover:bg-slate-900 transition-all mt-5 text-sm tracking-wide">
+                    SIMPAN HUTANG
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
         <!-- BUTANG "+" TERAPUNG (diasingkan dari nav, hanya di tab Home) -->
         <!-- ========================================== -->
         <button id="floating-add-btn" onclick="prepareNewTx()"
@@ -2014,6 +2204,548 @@
             infoEl.innerText = `Cadangan bajet: RM ${totalAvg.toFixed(2)} / bulan`;
         }
 
+        // ==========================================================
+        // PELAN PEMBAYARAN HUTANG (Avalanche / Snowball / Senarai Asal)
+        // ==========================================================
+        let debts = JSON.parse(localStorage.getItem('poket_debts')) || [];
+        function saveDebts() { localStorage.setItem('poket_debts', JSON.stringify(debts)); }
+
+        let debtSortStrategy = localStorage.getItem('poket_debt_strategy') || 'original'; // 'avalanche' | 'snowball' | 'original'
+        let currentEditDebtId = null;
+
+        const debtStrategyDesc = {
+            avalanche: 'Avalanche: bayar hutang APR TERTINGGI dahulu — jimat jumlah faedah keseluruhan.',
+            snowball: 'Snowball: bayar hutang BAKI TERKECIL dahulu — cepat selesaikan satu-satu, jaga motivasi.',
+            original: 'Ikut urutan asal anda masukkan (tiada penyusunan).'
+        };
+
+        // --- Bayaran tambahan bulanan (extra payment) ---
+        let debtExtraPayment = parseFloat(localStorage.getItem('poket_debt_extra')) || 0;
+        function saveDebtExtra() { localStorage.setItem('poket_debt_extra', String(debtExtraPayment)); }
+
+        function getDebtMin(d) {
+            const m = parseFloat(d.minPayment);
+            return isNaN(m) || m < 0 ? 0 : m;
+        }
+        // --- Rekod pembayaran (principal paid) ---
+        function getDebtPayments(d) { return Array.isArray(d.payments) ? d.payments : []; }
+        function getDebtTotalPaid(d) { return getDebtPayments(d).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0); }
+        // Baki semasa = baki asal - jumlah principal yang telah dibayar
+        function getDebtCurrentBalance(d) { return Math.max(0, d.balance - getDebtTotalPaid(d)); }
+        function getActiveDebts() { return debts.filter(d => getDebtCurrentBalance(d) > 0.005); }
+        function getTotalCurrentBalance() { return debts.reduce((s, d) => s + getDebtCurrentBalance(d), 0); }
+        function getTotalMinPayment() { return getActiveDebts().reduce((s, d) => s + getDebtMin(d), 0); }
+
+        function renderDebtPayments() {
+            const section = document.getElementById('debt-payment-section');
+            if (!section) return;
+            const debt = debts.find(d => d.id === currentEditDebtId);
+            section.classList.toggle('hidden', !debt);
+            if (!debt) return;
+
+            document.getElementById('debt-form-current-balance').innerText = getDebtCurrentBalance(debt).toFixed(2);
+            const list = getDebtPayments(debt).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+
+            document.getElementById('debt-payment-list').innerHTML = list.length === 0
+                ? '<li class="text-[10px] text-slate-400 text-center py-2">Belum ada rekod pembayaran.</li>'
+                : list.map(p => `
+                    <li class="flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 rounded-xl px-3 py-2">
+                        <div>
+                            <p class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">- RM ${(parseFloat(p.amount) || 0).toFixed(2)}</p>
+                            <p class="text-[9px] text-slate-400">${p.date ? parseLocalDateStr(p.date).toLocaleDateString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</p>
+                        </div>
+                        <button type="button" onclick="deleteDebtPayment(${p.id})" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 w-6 h-6 flex items-center justify-center"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                    </li>`).join('');
+        }
+
+        function addDebtPayment() {
+            const debt = debts.find(d => d.id === currentEditDebtId);
+            if (!debt) return;
+            const amount = parseFloat(document.getElementById('debt-payment-amount').value);
+            const date = document.getElementById('debt-payment-date').value || getLocalYYYYMMDD();
+            if (isNaN(amount) || amount <= 0) { alert('Sila masukkan jumlah principal paid yang sah.'); return; }
+
+            const remaining = getDebtCurrentBalance(debt);
+            if (amount > remaining + 0.005 && !confirm(`Bayaran RM ${amount.toFixed(2)} melebihi baki semasa RM ${remaining.toFixed(2)}. Teruskan?`)) return;
+
+            if (!Array.isArray(debt.payments)) debt.payments = [];
+            debt.payments.push({ id: Date.now(), amount, date });
+            saveDebts();
+
+            document.getElementById('debt-payment-amount').value = '';
+            renderDebtPayments();
+            renderDebtPlan();
+            renderHomeDebtPlanWidget();
+        }
+
+        function deleteDebtPayment(pid) {
+            const debt = debts.find(d => d.id === currentEditDebtId);
+            if (!debt || !confirm('Padam rekod pembayaran ini?')) return;
+            debt.payments = getDebtPayments(debt).filter(p => p.id !== pid);
+            saveDebts();
+            renderDebtPayments();
+            renderDebtPlan();
+            renderHomeDebtPlanWidget();
+        }
+
+        /**
+         * Simulasi bayaran hutang bulan demi bulan.
+         * Setiap bulan: faedah dikenakan -> semua hutang dibayar minimum ->
+         * baki bajet (bayaran tambahan + minimum hutang yang dah selesai) dicurah
+         * ke hutang keutamaan pertama mengikut strategi (kesan "snowball").
+         */
+        function simulateDebtPayoff(extra) {
+            const order = getSortedDebts().filter(d => getDebtCurrentBalance(d) > 0.005);
+            const sim = order.map(d => ({ id: d.id, balance: getDebtCurrentBalance(d), apr: d.apr, min: getDebtMin(d) }));
+            const budgetBase = sim.reduce((s, d) => s + d.min, 0) + (extra > 0 ? extra : 0);
+
+            const payoffMonth = {};
+            const timeline = [sim.reduce((s, d) => s + d.balance, 0)];
+            let month = 0, totalInterest = 0, totalPaid = 0;
+            const MAX_MONTHS = 600; // had 50 tahun
+
+            if (sim.length === 0) return { feasible: true, months: 0, totalInterest: 0, totalPaid: 0, payoffMonth: {}, monthlyPayment: 0, timeline: [0] };
+            if (budgetBase <= 0) return { feasible: false, reason: 'no-budget', timeline };
+
+            while (sim.some(d => d.balance > 0.005) && month < MAX_MONTHS) {
+                month++;
+                const startTotal = sim.reduce((s, d) => s + d.balance, 0);
+
+                // 1) Faedah bulanan
+                sim.forEach(d => {
+                    if (d.balance > 0) {
+                        const interest = d.balance * (d.apr / 100 / 12);
+                        d.balance += interest;
+                        totalInterest += interest;
+                    }
+                });
+
+                let budget = budgetBase;
+
+                // 2) Bayaran minimum untuk semua hutang aktif
+                sim.forEach(d => {
+                    if (d.balance > 0 && budget > 0) {
+                        const pay = Math.min(d.min, d.balance, budget);
+                        d.balance -= pay; budget -= pay; totalPaid += pay;
+                    }
+                });
+
+                // 3) Baki bajet -> hutang keutamaan (mengikut strategi)
+                for (const d of sim) {
+                    if (budget <= 0.005) break;
+                    if (d.balance > 0) {
+                        const pay = Math.min(budget, d.balance);
+                        d.balance -= pay; budget -= pay; totalPaid += pay;
+                    }
+                }
+
+                sim.forEach(d => { if (d.balance <= 0.005 && !payoffMonth[d.id]) { d.balance = 0; payoffMonth[d.id] = month; } });
+
+                const endTotal = sim.reduce((s, d) => s + d.balance, 0);
+                timeline.push(endTotal);
+                if (endTotal >= startTotal - 0.005) return { feasible: false, reason: 'too-low', month, timeline };
+            }
+
+            if (month >= MAX_MONTHS) return { feasible: false, reason: 'too-long', timeline };
+
+            return { feasible: true, months: month, totalInterest, totalPaid, payoffMonth, monthlyPayment: budgetBase, timeline };
+        }
+
+        // Unjuran baki untuk graf — sentiasa jalan sehingga `horizon` bulan (tak berhenti awal)
+        function projectDebtTimeline(extra, horizon) {
+            const order = getSortedDebts().filter(d => getDebtCurrentBalance(d) > 0.005);
+            const sim = order.map(d => ({ balance: getDebtCurrentBalance(d), apr: d.apr, min: getDebtMin(d) }));
+            const budgetBase = sim.reduce((s, d) => s + d.min, 0) + (extra > 0 ? extra : 0);
+            const out = [sim.reduce((s, d) => s + d.balance, 0)];
+
+            for (let m = 1; m <= horizon; m++) {
+                sim.forEach(d => { if (d.balance > 0) d.balance += d.balance * (d.apr / 100 / 12); });
+                let budget = budgetBase;
+                sim.forEach(d => { if (d.balance > 0 && budget > 0) { const p = Math.min(d.min, d.balance, budget); d.balance -= p; budget -= p; } });
+                for (const d of sim) { if (budget <= 0.005) break; if (d.balance > 0) { const p = Math.min(budget, d.balance); d.balance -= p; budget -= p; } }
+                sim.forEach(d => { if (d.balance < 0.005) d.balance = 0; });
+                out.push(sim.reduce((s, d) => s + d.balance, 0));
+            }
+            return out;
+        }
+
+        let debtProjectionChart = null;
+        function renderDebtProjectionChart(plan) {
+            const canvas = document.getElementById('debt-projection-chart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const noteEl = document.getElementById('debt-chart-note');
+
+            if (debtProjectionChart) { debtProjectionChart.destroy(); debtProjectionChart = null; }
+            if (getActiveDebts().length === 0) { if (noteEl) noteEl.innerText = 'Tiada baki hutang aktif untuk diunjurkan.'; return; }
+
+            const base = simulateDebtPayoff(0);
+            const planMonths = plan.feasible ? plan.months : 120;
+            const baseMonths = base.feasible ? base.months : 120;
+            const horizon = Math.min(360, Math.max(12, planMonths, baseMonths) + 2);
+            const step = Math.max(1, Math.ceil(horizon / 60));
+
+            const planLine = projectDebtTimeline(debtExtraPayment, horizon);
+            const minLine = projectDebtTimeline(0, horizon);
+
+            const labels = [], planData = [], minData = [];
+            for (let m = 0; m <= horizon; m += step) {
+                labels.push(m % 12 === 0 ? `${m / 12}T` : `${m}b`);
+                planData.push(+planLine[m].toFixed(2));
+                minData.push(+minLine[m].toFixed(2));
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.2)';
+            const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+            debtProjectionChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Pelan anda', data: planData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.12)', fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2.5 },
+                        { label: 'Minimum sahaja', data: minData, borderColor: '#fb7185', backgroundColor: 'transparent', fill: false, tension: 0.25, pointRadius: 0, borderWidth: 2, borderDash: [5, 4] }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: items => `Bulan ${items[0].dataIndex * step}`,
+                                label: ctx => `${ctx.dataset.label}: RM ${ctx.parsed.y.toFixed(2)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 9 }, maxTicksLimit: 8 } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 }, callback: v => formatRMShort(v) } }
+                    }
+                }
+            });
+
+            if (noteEl) {
+                noteEl.innerText = plan.feasible && base.feasible
+                    ? `Pelan anda: settle ~${payoffDateLabel(plan.months)} (${plan.months} bln) • Minimum sahaja: ~${payoffDateLabel(base.months)} (${base.months} bln).`
+                    : plan.feasible
+                        ? `Pelan anda: settle ~${payoffDateLabel(plan.months)} (${plan.months} bln). Garisan minimum sahaja tidak pernah mencapai sifar.`
+                        : 'Kedua-dua unjuran tidak mencapai sifar — naikkan bayaran bulanan anda.';
+            }
+        }
+
+        function formatMonthsLabel(m) {
+            const y = Math.floor(m / 12), mm = m % 12;
+            if (y === 0) return `${mm} bulan`;
+            if (mm === 0) return `${y} tahun`;
+            return `${y} thn ${mm} bln`;
+        }
+
+        function payoffDateLabel(monthsFromNow) {
+            const d = new Date();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + monthsFromNow);
+            return d.toLocaleDateString('ms-MY', { month: 'short', year: 'numeric' });
+        }
+
+        function setDebtExtra(val) {
+            debtExtraPayment = Math.max(0, val || 0);
+            saveDebtExtra();
+            const input = document.getElementById('debt-extra-payment');
+            if (input) input.value = debtExtraPayment > 0 ? debtExtraPayment : '';
+            renderDebtSimulation();
+            renderHomeDebtPlanWidget();
+        }
+        function addDebtExtra(val) { setDebtExtra(debtExtraPayment + val); }
+        function onDebtExtraChange() {
+            const raw = parseFloat(document.getElementById('debt-extra-payment').value);
+            debtExtraPayment = isNaN(raw) || raw < 0 ? 0 : raw;
+            saveDebtExtra();
+            renderDebtSimulation();
+            renderHomeDebtPlanWidget();
+        }
+
+        function renderDebtSimulation() {
+            const resultEl = document.getElementById('debt-sim-result');
+            if (!resultEl) return;
+            const noteEl = document.getElementById('debt-sim-note');
+            const totalMin = getTotalMinPayment();
+
+            document.getElementById('debt-total-min').innerText = totalMin.toFixed(2);
+            document.getElementById('debt-monthly-total').innerText = (totalMin + debtExtraPayment).toFixed(2);
+
+            if (debts.length === 0) { resultEl.innerHTML = ''; noteEl.innerText = ''; return; }
+
+            const plan = simulateDebtPayoff(debtExtraPayment);
+            const box = (label, value, color) => `
+                <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-3">
+                    <p class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">${label}</p>
+                    <p class="text-sm font-extrabold ${color} mt-0.5">${value}</p>
+                </div>`;
+
+            if (!plan.feasible) {
+                const msg = plan.reason === 'no-budget'
+                    ? 'Isi bayaran minimum bagi setiap hutang (atau tambah bayaran tambahan) untuk lihat simulasi.'
+                    : plan.reason === 'too-long'
+                        ? 'Pada kadar bayaran ini, hutang mengambil masa lebih 50 tahun untuk selesai. Tambah bayaran bulanan anda.'
+                        : 'Amaran: jumlah bayaran bulanan anda lebih rendah daripada faedah yang terkumpul — baki hutang tidak akan berkurang. Sila naikkan bayaran tambahan.';
+                resultEl.innerHTML = `
+                    <div class="col-span-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl p-3">
+                        <p class="text-[11px] font-bold text-rose-600 dark:text-rose-400 mb-1"><i class="fas fa-triangle-exclamation mr-1"></i>Tidak mencukupi</p>
+                        <p class="text-[10px] text-rose-500/90 dark:text-rose-300/80 leading-relaxed">${msg}</p>
+                    </div>`;
+                noteEl.innerText = '';
+                renderDebtProjectionChart(plan);
+                debts.forEach(d => {
+                    const el = document.getElementById(`debt-payoff-${d.id}`);
+                    if (el) el.innerText = '—';
+                });
+                return;
+            }
+
+            resultEl.innerHTML =
+                box('Bebas Hutang Dalam', formatMonthsLabel(plan.months), 'text-emerald-500') +
+                box('Anggaran Tarikh', payoffDateLabel(plan.months), 'text-slate-700 dark:text-slate-200') +
+                box('Jumlah Faedah', `RM ${plan.totalInterest.toFixed(2)}`, 'text-orange-500') +
+                box('Jumlah Dibayar', `RM ${plan.totalPaid.toFixed(2)}`, 'text-slate-700 dark:text-slate-200');
+
+            // Bandingkan dengan bayaran minimum sahaja
+            if (debtExtraPayment > 0) {
+                const base = simulateDebtPayoff(0);
+                if (base.feasible) {
+                    const fasterM = base.months - plan.months;
+                    const saved = base.totalInterest - plan.totalInterest;
+                    noteEl.innerText = `Dengan bayaran tambahan RM ${debtExtraPayment.toFixed(2)}/bulan, anda bebas hutang ${formatMonthsLabel(fasterM)} lebih awal dan jimat faedah RM ${saved.toFixed(2)} berbanding bayar minimum sahaja.`;
+                } else {
+                    noteEl.innerText = `Bayaran minimum sahaja tidak akan menyelesaikan hutang ini — bayaran tambahan RM ${debtExtraPayment.toFixed(2)}/bulan inilah yang membolehkan anda bebas hutang.`;
+                }
+            } else {
+                noteEl.innerText = 'Cuba masukkan bayaran tambahan untuk lihat berapa bulan lebih awal anda boleh bebas hutang.';
+            }
+
+            renderDebtProjectionChart(plan);
+
+            // Label bulan selesai bagi setiap hutang
+            debts.forEach(d => {
+                const el = document.getElementById(`debt-payoff-${d.id}`);
+                if (!el) return;
+                const m = plan.payoffMonth[d.id];
+                el.innerText = m ? `Selesai ~${payoffDateLabel(m)} (${m} bln)` : '—';
+            });
+        }
+
+        function openDebtPlanModal() {
+            const modal = document.getElementById('debt-plan-modal');
+            modal.classList.remove('hidden', 'slide-out-right-modal');
+            modal.classList.add('flex', 'slide-in-right-modal');
+            renderDebtPlan();
+        }
+
+        function closeDebtPlanModal() {
+            const modal = document.getElementById('debt-plan-modal');
+            modal.classList.remove('slide-in-right-modal');
+            modal.classList.add('slide-out-right-modal');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex', 'slide-out-right-modal');
+            }, 250);
+        }
+
+        function setDebtStrategy(strategy) {
+            debtSortStrategy = strategy;
+            localStorage.setItem('poket_debt_strategy', strategy);
+            renderDebtPlan();
+        }
+
+        function getSortedDebts() {
+            const list = [...debts];
+            if (debtSortStrategy === 'avalanche') list.sort((a, b) => b.apr - a.apr);       // APR tinggi -> rendah
+            else if (debtSortStrategy === 'snowball') list.sort((a, b) => getDebtCurrentBalance(a) - getDebtCurrentBalance(b)); // baki rendah -> tinggi
+            return list; // 'original' -> kekal urutan asal (tiada susun)
+        }
+
+        function renderDebtPlan() {
+            const totalBalance = getTotalCurrentBalance();
+            const weightedAprSum = debts.reduce((s, d) => s + (getDebtCurrentBalance(d) * d.apr), 0);
+            const avgApr = totalBalance > 0 ? weightedAprSum / totalBalance : 0;
+
+            document.getElementById('debt-total-balance').innerText = totalBalance.toFixed(2);
+            document.getElementById('debt-avg-apr').innerText = avgApr.toFixed(1);
+
+            document.getElementById('debt-empty-state').classList.toggle('hidden', debts.length > 0);
+            document.getElementById('debt-strategy-section').classList.toggle('hidden', debts.length === 0);
+
+            // Suis strategi — kemas kini rupa butang aktif
+            ['avalanche', 'snowball', 'original'].forEach(s => {
+                const btn = document.getElementById(`debt-strategy-${s}`);
+                if (!btn) return;
+                btn.className = s === debtSortStrategy
+                    ? 'flex-1 py-2.5 rounded-xl text-[10px] font-bold bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm transition-all'
+                    : 'flex-1 py-2.5 rounded-xl text-[10px] font-bold text-slate-500 dark:text-slate-400 transition-all';
+            });
+            document.getElementById('debt-strategy-desc').innerText = debtStrategyDesc[debtSortStrategy];
+
+            // Segarkan input bayaran tambahan
+            const extraInput = document.getElementById('debt-extra-payment');
+            if (extraInput) extraInput.value = debtExtraPayment > 0 ? debtExtraPayment : '';
+
+            if (debts.length === 0) {
+                document.getElementById('debt-list').innerHTML = '';
+                renderDebtSimulation();
+                return;
+            }
+
+            const sorted = getSortedDebts();
+            document.getElementById('debt-list').innerHTML = sorted.map((d, i) => {
+                const paid = getDebtTotalPaid(d);
+                const current = getDebtCurrentBalance(d);
+                const pctPaid = d.balance > 0 ? Math.min(100, paid / d.balance * 100) : 100;
+                const settled = current <= 0.005;
+                return `
+                    <li class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sleek ${settled ? 'opacity-70' : ''}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="w-7 h-7 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xs flex-shrink-0">${i + 1}</span>
+                                <div class="min-w-0">
+                                    <p class="font-bold text-slate-700 dark:text-slate-200 text-sm truncate">${escapeHtml(d.name)}</p>
+                                    <p class="text-[10px] text-slate-400 mt-0.5">APR ${d.apr.toFixed(1)}% • Min RM ${getDebtMin(d).toFixed(2)}/bln</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-col space-y-1 flex-shrink-0">
+                                <button onclick="editDebt(${d.id})" class="text-slate-300 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 bg-slate-50 dark:bg-slate-700/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-pen text-[10px]"></i></button>
+                                <button onclick="deleteDebt(${d.id})" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 bg-slate-50 dark:bg-slate-700/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-baseline mt-3 mb-1">
+                            <span class="text-[10px] text-slate-400">Baki semasa</span>
+                            <span class="font-bold ${settled ? 'text-emerald-500' : 'text-rose-500'} text-sm">RM ${current.toFixed(2)}</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full ${settled ? 'bg-emerald-500' : 'bg-emerald-400'}" style="width:${pctPaid}%"></div>
+                        </div>
+                        <div class="flex justify-between items-center mt-1.5">
+                            <span class="text-[9px] text-slate-400">Dibayar RM ${paid.toFixed(2)} / RM ${d.balance.toFixed(2)} (${pctPaid.toFixed(0)}%)</span>
+                            <button onclick="editDebt(${d.id})" class="text-[9px] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/15 px-2 py-1 rounded-lg"><i class="fas fa-plus mr-0.5"></i>Payment</button>
+                        </div>
+                        <p class="text-[10px] ${settled ? 'text-emerald-500' : 'text-emerald-600 dark:text-emerald-400'} font-semibold mt-2">
+                            <i class="fas fa-flag-checkered mr-1"></i>${settled ? 'Hutang telah selesai!' : `<span id="debt-payoff-${d.id}">—</span>`}
+                        </p>
+                    </li>`;
+            }).join('');
+
+            renderDebtSimulation();
+        }
+
+        function openDebtFormModal(id) {
+            currentEditDebtId = id || null;
+
+            document.getElementById('debt-input-name').value = '';
+            document.getElementById('debt-input-balance').value = '';
+            document.getElementById('debt-input-apr').value = '';
+            document.getElementById('debt-input-minpay').value = '';
+
+            if (id) {
+                const debt = debts.find(d => d.id === id);
+                if (debt) {
+                    document.getElementById('debt-input-name').value = debt.name;
+                    document.getElementById('debt-input-balance').value = debt.balance;
+                    document.getElementById('debt-input-apr').value = debt.apr;
+                    document.getElementById('debt-input-minpay').value = getDebtMin(debt) || '';
+                }
+                document.getElementById('debt-form-title').innerText = 'Edit Hutang';
+                document.getElementById('debt-form-submit-btn').innerText = 'KEMASKINI HUTANG';
+            } else {
+                document.getElementById('debt-form-title').innerText = 'Tambah Hutang';
+                document.getElementById('debt-form-submit-btn').innerText = 'SIMPAN HUTANG';
+            }
+
+            document.getElementById('debt-payment-amount').value = '';
+            document.getElementById('debt-payment-date').value = getLocalYYYYMMDD();
+            renderDebtPayments();
+
+            const modal = document.getElementById('debt-form-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+        }
+
+        function closeDebtFormModal() {
+            const modal = document.getElementById('debt-form-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function saveDebtForm() {
+            const name = document.getElementById('debt-input-name').value.trim();
+            const balance = parseFloat(document.getElementById('debt-input-balance').value);
+            const apr = parseFloat(document.getElementById('debt-input-apr').value);
+            const minRaw = document.getElementById('debt-input-minpay').value;
+            const minPayment = minRaw === '' ? 0 : parseFloat(minRaw);
+
+            if (!name) { alert('Sila masukkan nama hutang.'); return; }
+            if (isNaN(balance) || balance < 0) { alert('Sila masukkan baki hutang yang sah.'); return; }
+            if (isNaN(apr) || apr < 0) { alert('Sila masukkan APR yang sah.'); return; }
+            if (isNaN(minPayment) || minPayment < 0) { alert('Sila masukkan bayaran minimum bulanan yang sah.'); return; }
+
+            // Amaran mesra jika bayaran minimum tak mampu tampung faedah bulanan
+            const monthlyInterest = balance * (apr / 100 / 12);
+            if (minPayment > 0 && minPayment <= monthlyInterest) {
+                if (!confirm(`Bayaran minimum RM ${minPayment.toFixed(2)} lebih rendah daripada faedah bulanan (RM ${monthlyInterest.toFixed(2)}). Baki hutang ini takkan berkurang. Teruskan simpan?`)) return;
+            }
+
+            if (currentEditDebtId) {
+                const debt = debts.find(d => d.id === currentEditDebtId);
+                if (debt) { debt.name = name; debt.balance = balance; debt.apr = apr; debt.minPayment = minPayment; }
+            } else {
+                debts.push({ id: Date.now(), name, balance, apr, minPayment });
+            }
+
+            saveDebts();
+            closeDebtFormModal();
+            renderDebtPlan();
+            renderHomeDebtPlanWidget();
+        }
+
+        // Cadangan pantas: 5% daripada baki (lazim bagi kad kredit), minimum RM25
+        function suggestMinPayment() {
+            const balance = parseFloat(document.getElementById('debt-input-balance').value);
+            if (isNaN(balance) || balance <= 0) { alert('Isi baki hutang dahulu.'); return; }
+            const suggested = Math.max(25, balance * 0.05);
+            document.getElementById('debt-input-minpay').value = suggested.toFixed(2);
+            document.getElementById('debt-minpay-hint').innerText = `Dicadang: 5% daripada baki (minimum RM25). Ubah ikut ansuran sebenar anda.`;
+        }
+
+        function editDebt(id) { openDebtFormModal(id); }
+
+        function deleteDebt(id) {
+            if (!confirm('Padam hutang ini?')) return;
+            debts = debts.filter(d => d.id !== id);
+            saveDebts();
+            renderDebtPlan();
+            renderHomeDebtPlanWidget();
+        }
+
+        // Widget mini di Homepage: jumlah baki hutang & bilangan hutang
+        function renderHomeDebtPlanWidget() {
+            const infoEl = document.getElementById('home-debt-plan-info');
+            if (!infoEl) return;
+            const totalBalance = debts.reduce((s, d) => s + d.balance, 0);
+            if (debts.length === 0) { infoEl.innerText = 'Tiada hutang direkodkan'; return; }
+
+            const monthly = getTotalMinPayment() + debtExtraPayment;
+            const plan = simulateDebtPayoff(debtExtraPayment);
+            const tail = plan.feasible
+                ? `Bebas hutang ${payoffDateLabel(plan.months)} (${plan.months} bln)`
+                : 'Isi bayaran minimum untuk lihat simulasi';
+            infoEl.innerText = `Baki: RM ${totalBalance.toFixed(2)} • Bayar RM ${monthly.toFixed(2)}/bln • ${tail}`;
+        }
+
         const featureCatalog = [
             { id: 'import-bank', name: 'Import Penyata Bank', desc: 'Muat naik CSV Maybank / TnG terus jadi rekod', icon: 'fa-file-import', iconWrap: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' },
             { id: 'savings-goal', name: 'Sasaran Simpanan', desc: 'Tetapkan matlamat & jejak kemajuan simpanan', icon: 'fa-piggy-bank', iconWrap: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
@@ -2021,7 +2753,8 @@
             { id: 'multi-account', name: 'Berbilang Akaun Bank', desc: 'Uruskan Maybank, TnG, CIMB dll berasingan', icon: 'fa-building-columns', iconWrap: 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400' },
             { id: 'forecast', name: 'Ramalan Bajet Bulanan', desc: 'Cadangan bajet ikut kategori — purata 3 bulan lepas', icon: 'fa-wand-magic-sparkles', iconWrap: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' },
             { id: '3d-costing', name: 'Pengiraan 3D Costing', desc: 'Kira & anggar kos projek/pembinaan secara 3D', icon: 'fa-cube', iconWrap: 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' },
-            { id: 'custom-category', name: 'Custom Kategori', desc: 'Tambah & edit kategori Belanja/Pendapatan anda sendiri', icon: 'fa-tags', iconWrap: 'bg-teal-100 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400' }
+            { id: 'custom-category', name: 'Custom Kategori', desc: 'Tambah & edit kategori Belanja/Pendapatan anda sendiri', icon: 'fa-tags', iconWrap: 'bg-teal-100 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400' },
+            { id: 'debt-plan', name: 'Pelan Pembayaran Hutang', desc: 'Strategi Avalanche/Snowball + simulasi bayaran bulanan & bayaran tambahan', icon: 'fa-hand-holding-dollar', iconWrap: 'bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400' }
         ];
 
         let enabledFeatures = JSON.parse(localStorage.getItem('poket_enabled_features')) || [];
@@ -2127,6 +2860,22 @@
                             </button>
                         </div>`;
                 }
+                if (f.id === 'debt-plan') {
+                    return `
+                        <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-3 fade-in-widget">
+                            <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
+                                <p id="home-debt-plan-info" class="text-[10px] text-slate-400">Memuatkan...</p>
+                            </div>
+                            <button type="button" onclick="openDebtPlanModal()" class="w-7 h-7 flex-shrink-0 rounded-full bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center">
+                                <i class="fas fa-expand text-[9px]"></i>
+                            </button>
+                            <button type="button" onclick="disableFeatureFromHome('debt-plan')" class="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center">
+                                <i class="fas fa-times text-[10px]"></i>
+                            </button>
+                        </div>`;
+                }
                 return `
                     <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-3 fade-in-widget">
                         <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
@@ -2145,6 +2894,9 @@
             }
             if (enabledFeatures.includes('forecast')) {
                 renderHomeForecastWidget();
+            }
+            if (enabledFeatures.includes('debt-plan')) {
+                renderHomeDebtPlanWidget();
             }
         }
 
