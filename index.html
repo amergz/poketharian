@@ -544,8 +544,12 @@
 
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2">
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50">
-                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wider">Bajet Bulanan (RM)</label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bajet Bulanan (RM)</label>
+                            <button type="button" onclick="addToMonthlyBudget()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg hover:bg-indigo-100 transition-colors"><i class="fas fa-plus mr-1"></i>Tambah</button>
+                        </div>
                         <input type="number" id="setting-budget" class="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-200 border-transparent">
+                        <p class="text-[9px] text-slate-400 mt-1.5">Tekan "Simpan Tetapan" untuk tetapkan/gantikan nilai bajet, atau guna butang "Tambah" untuk tambah (top-up) terus ke Total Dana Semasa tanpa timpa nilai sedia ada.</p>
                     </div>
 
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
@@ -4273,6 +4277,21 @@
             localStorage.setItem('poket_plan', JSON.stringify(appPlan));
             alert('Tetapan berjaya disimpan!');
             refreshData();
+        }
+
+        // Tambah (top-up) jumlah terus ke Bajet Bulanan semasa, supaya "Status Bulan Ini >
+        // Total Dana Semasa" terus bertambah tanpa perlu timpa/reset nilai bajet sedia ada.
+        function addToMonthlyBudget() {
+            const val = prompt('Masukkan jumlah (RM) untuk ditambah ke Bajet Bulanan / Total Dana Semasa:');
+            if (val === null) return;
+            const amt = parseFloat(val);
+            if (isNaN(amt) || amt <= 0) { alert('Sila masukkan jumlah yang sah.'); return; }
+
+            appPlan.monthlyBudget = (parseFloat(appPlan.monthlyBudget) || 0) + amt;
+            localStorage.setItem('poket_plan', JSON.stringify(appPlan));
+            document.getElementById('setting-budget').value = appPlan.monthlyBudget;
+            refreshData();
+            alert(`RM ${amt.toFixed(2)} berjaya ditambah. Bajet Bulanan kini RM ${appPlan.monthlyBudget.toFixed(2)}.`);
         }
 
         // ==========================================================
