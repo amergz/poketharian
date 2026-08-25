@@ -160,6 +160,7 @@
                     <div class="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-right">
                         <p class="text-[9px] uppercase tracking-wider text-indigo-100">Baki Bulan</p>
                         <p class="text-sm font-bold"><span id="days-remaining-count">0</span> Hari</p>
+                        <p class="text-[8px] text-indigo-200 mt-0.5" id="pay-cycle-range"></p>
                     </div>
                 </div>
 
@@ -523,7 +524,8 @@
                 </div>
 
                 <div class="bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 rounded-3xl shadow-sleek mb-6">
-                    <h3 class="text-xs font-medium text-slate-300 uppercase tracking-wider mb-4"><i class="fas fa-bullseye mr-2"></i>Status Bulan Ini</h3>
+                    <h3 class="text-xs font-medium text-slate-300 uppercase tracking-wider mb-1"><i class="fas fa-bullseye mr-2"></i>Status Bulan Ini</h3>
+                    <p class="text-[10px] text-slate-400 mb-3" id="plan-cycle-range"></p>
                     <div class="space-y-3">
                         <div class="flex justify-between items-end border-b border-white/10 pb-2">
                             <p class="text-xs text-slate-400">Total Dana Semasa</p>
@@ -3871,38 +3873,84 @@
             }
         }
 
+        // --- KITARAN GAJI (Pay Cycle) ---
+        // Sesetengah pengguna terima gaji bukan pada penghujung bulan (cth: 22 atau 23 haribulan).
+        // Untuk sokong ini, "bulan" bajet TIDAK lagi rigid ikut kalendar (1hb - akhir bulan), tapi
+        // ikut hari rekod terkini kategori "Gaji" (Pendapatan). Cth: gaji direkod pada 23hb ->
+        // kitaran semasa ialah 23hb bulan ini hingga 22hb bulan depan, dan berulang begitu.
+        // Jika tiada rekod Gaji langsung, anchorDay lalai = 1 (sama seperti kalendar biasa).
+        function getPayCycleAnchorDay() {
+            const gajiTx = transactions
+                .filter(t => t.type === 'income' && t.category === 'Gaji' && t.date)
+                .sort((a, b) => (a.date < b.date ? 1 : -1)); // terkini dahulu
+            if (gajiTx.length === 0) return 1;
+            const day = parseInt(gajiTx[0].date.split('-')[2], 10);
+            return (day >= 1 && day <= 31) ? day : 1;
+        }
+
+        // Permulaan kitaran bagi sebarang tarikh, ikut anchorDay (dilaraskan jika bulan
+        // berkenaan lebih pendek, cth anchorDay=31 tapi Februari cuma 28/29 hari).
+        function getCycleStartForDate(dateObj, anchorDay) {
+            const y = dateObj.getFullYear(), m = dateObj.getMonth(), d = dateObj.getDate();
+            const dim = new Date(y, m + 1, 0).getDate();
+            const effAnchor = Math.min(anchorDay, dim);
+            if (d >= effAnchor) return new Date(y, m, effAnchor);
+            const prevDim = new Date(y, m, 0).getDate();
+            return new Date(y, m - 1, Math.min(anchorDay, prevDim));
+        }
+
+        function getNextCycleStart(cycleStart, anchorDay) {
+            const y = cycleStart.getFullYear(), m = cycleStart.getMonth();
+            const nextDim = new Date(y, m + 2, 0).getDate();
+            return new Date(y, m + 1, Math.min(anchorDay, nextDim));
+        }
+
+        function getCurrentPayCycle(today) {
+            const anchorDay = getPayCycleAnchorDay();
+            const start = getCycleStartForDate(today, anchorDay);
+            const nextStart = getNextCycleStart(start, anchorDay);
+            const end = new Date(nextStart);
+            end.setDate(end.getDate() - 1);
+            return { anchorDay, start, nextStart, end };
+        }
+
         // --- CORE LOGIC & RENDER ---
         function calculateFinance() {
-            const todayStr = getLocalYYYYMMDD();
-            const currentMonthStr = todayStr.substring(0, 7);
-            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = getLocalYYYYMMDD(today);
+
+            const { anchorDay, start: cycleStart, nextStart, end: cycleEnd } = getCurrentPayCycle(today);
+            const cycleStartStr = getLocalYYYYMMDD(cycleStart);
+            const nextStartStr = getLocalYYYYMMDD(nextStart);
+
             let surplus = 0;
             if (appPlan.carryForward) {
-                const pastTx = transactions.filter(t => t.date.substring(0, 7) < currentMonthStr);
-                const uniquePastMonths = [...new Set(pastTx.map(t => t.date.substring(0, 7)))];
+                const pastTx = transactions.filter(t => t.date < cycleStartStr);
+                // Kira bilangan kitaran LEPAS yang unik (bukan bulan kalendar) supaya carry forward
+                // turut ikut kitaran gaji yang sama.
+                const uniquePastCycles = new Set(pastTx.map(t => getLocalYYYYMMDD(getCycleStartForDate(parseLocalDateStr(t.date), anchorDay))));
                 let pInc = 0, pExp = 0;
                 pastTx.forEach(t => t.type === 'income' ? pInc += t.amount : pExp += t.amount);
-                surplus = (uniquePastMonths.length * appPlan.monthlyBudget) + pInc - pExp;
+                surplus = (uniquePastCycles.size * appPlan.monthlyBudget) + pInc - pExp;
                 if(surplus < 0) surplus = 0;
             }
 
             let cSpentBf = 0, spentToday = 0, cInc = 0;
-            transactions.filter(t => t.date.startsWith(currentMonthStr)).forEach(t => { 
+            transactions.filter(t => t.date >= cycleStartStr && t.date < nextStartStr).forEach(t => {
                 if (t.type === 'expense') { t.date === todayStr ? spentToday += t.amount : cSpentBf += t.amount; }
                 else { cInc += t.amount; }
             });
 
             const totalFunds = appPlan.monthlyBudget + surplus + cInc;
-            const now = new Date();
-            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const daysRem = daysInMonth - now.getDate() + 1;
-            
+            const daysRem = Math.round((cycleEnd - today) / 86400000) + 1;
+
             const remBeforeToday = totalFunds - cSpentBf;
             const limit = remBeforeToday > 0 ? (remBeforeToday / daysRem) : 0;
             const balance = limit - spentToday;
             const currentSpent = cSpentBf + spentToday;
 
-            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem };
+            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem, cycleStart, cycleEnd, anchorDay };
         }
 
         function refreshData() {
@@ -3910,10 +3958,18 @@
             document.getElementById('home-daily-limit').innerText = f.limit.toFixed(2);
             document.getElementById('home-spent-today').innerText = f.spentToday.toFixed(2);
             document.getElementById('days-remaining-count').innerText = f.daysRem;
-            
+
             const balEl = document.getElementById('home-today-balance');
             balEl.innerText = (f.balance < 0 ? "-" : "") + Math.abs(f.balance).toFixed(2);
             balEl.className = f.balance < 0 ? "text-rose-300" : "text-white";
+
+            // Papar julat tarikh kitaran gaji semasa (cth: "23 Ogo - 22 Sep") supaya jelas
+            // bila kitaran bajet bermula/tamat, terutama untuk gaji bukan 1hb.
+            const cycleLabel = `${f.cycleStart.toLocaleDateString('ms-MY', { day: '2-digit', month: 'short' })} - ${f.cycleEnd.toLocaleDateString('ms-MY', { day: '2-digit', month: 'short' })}`;
+            const rangeEl = document.getElementById('pay-cycle-range');
+            if (rangeEl) rangeEl.innerText = cycleLabel;
+            const planRangeEl = document.getElementById('plan-cycle-range');
+            if (planRangeEl) planRangeEl.innerText = f.anchorDay === 1 ? `Kitaran: ${cycleLabel} (ikut kalendar)` : `Kitaran Gaji: ${cycleLabel} (anchor ${f.anchorDay}hb)`;
 
             document.getElementById('setting-budget').value = appPlan.monthlyBudget;
             document.getElementById('setting-carry').checked = appPlan.carryForward;
