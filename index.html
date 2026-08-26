@@ -2498,23 +2498,26 @@
             const lm = getMonthNetSurplus(lastMonthDate.getFullYear(), lastMonthDate.getMonth());
             const surplusLM = lm.surplus > 0 ? lm.surplus : 0;
 
-            // Tambahan: gabungkan Surplus (Baki Bersih) bulan lepas DENGAN Baki Gaji (Selepas
-            // Komitmen) dari ciri "Simpanan Dari Gaji", supaya Sasaran Simpanan di Laman Utama
-            // cerminkan kedua-dua sumber wang lebihan — bukan surplus bulan lepas sahaja.
+            // Sasaran Simpanan = (Surplus Bulan Lepas x 20% tetap) + (Baki Gaji Selepas Komitmen
+            // x Kadar Simpanan boleh ubah, dari ciri "Simpanan Dari Gaji"). Setiap sumber
+            // didarab dengan kadarnya SENDIRI, bukan digabung dahulu baru didarab satu kadar.
             const savedIncome = parseFloat(localStorage.getItem('poket_salary_savings_income')) || 0;
             const totalCommitment = (typeof getTotalCommitments === 'function') ? getTotalCommitments() : 0;
             const salaryNet = Math.max(0, savedIncome - totalCommitment);
+            const salaryPct = parseFloat(localStorage.getItem('poket_salary_savings_pct'));
+            const salaryRate = (isNaN(salaryPct) ? 20 : salaryPct) / 100;
 
-            const combinedBase = surplusLM + salaryNet;
-            const goal = combinedBase * SAVINGS_GOAL_PCT;
+            const surplusPortion = surplusLM * SAVINGS_GOAL_PCT;
+            const salaryPortion = salaryNet * salaryRate;
+            const goal = surplusPortion + salaryPortion;
 
             const infoEl = document.getElementById('home-savings-goal-info');
             if (infoEl) {
-                infoEl.innerText = `RM ${goal.toFixed(2)} — 20% (surplus + baki gaji)`;
+                infoEl.innerText = `RM ${goal.toFixed(2)} — 20% surplus + ${(salaryRate * 100).toFixed(0)}% baki gaji`;
             }
             const breakdownEl = document.getElementById('home-savings-goal-breakdown');
             if (breakdownEl) {
-                breakdownEl.innerText = `Surplus ${monthNames[lastMonthDate.getMonth()]}: RM ${surplusLM.toFixed(2)} + Baki Gaji: RM ${salaryNet.toFixed(2)}`;
+                breakdownEl.innerText = `(Surplus ${monthNames[lastMonthDate.getMonth()]} RM ${surplusLM.toFixed(2)} × 20% = RM ${surplusPortion.toFixed(2)}) + (Baki Gaji RM ${salaryNet.toFixed(2)} × ${(salaryRate * 100).toFixed(0)}% = RM ${salaryPortion.toFixed(2)})`;
             }
 
             const labels = [];
