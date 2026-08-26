@@ -1539,9 +1539,18 @@
             const dataToExport = { transactions: transactions, plan: appPlan, theme: currentTheme };
             const dataStr = JSON.stringify(dataToExport);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+            // Nama fail: "Poket Harian - DD-MM-YYYY HH.MM.SS.json" supaya tarikh & masa backup
+            // senang dibaca terus (bukan angka timestamp).
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const tarikh = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
+            const masa = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
+            const fileName = `Poket Harian - ${tarikh} ${masa}.json`;
+
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', `poket_harian_backup_${new Date().getTime()}.json`);
+            linkElement.setAttribute('download', fileName);
             linkElement.click();
         }
 
