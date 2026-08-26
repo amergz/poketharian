@@ -2496,11 +2496,25 @@
             const now = new Date();
             const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             const lm = getMonthNetSurplus(lastMonthDate.getFullYear(), lastMonthDate.getMonth());
-            const goal = lm.surplus > 0 ? lm.surplus * SAVINGS_GOAL_PCT : 0;
+            const surplusLM = lm.surplus > 0 ? lm.surplus : 0;
+
+            // Tambahan: gabungkan Surplus (Baki Bersih) bulan lepas DENGAN Baki Gaji (Selepas
+            // Komitmen) dari ciri "Simpanan Dari Gaji", supaya Sasaran Simpanan di Laman Utama
+            // cerminkan kedua-dua sumber wang lebihan — bukan surplus bulan lepas sahaja.
+            const savedIncome = parseFloat(localStorage.getItem('poket_salary_savings_income')) || 0;
+            const totalCommitment = (typeof getTotalCommitments === 'function') ? getTotalCommitments() : 0;
+            const salaryNet = Math.max(0, savedIncome - totalCommitment);
+
+            const combinedBase = surplusLM + salaryNet;
+            const goal = combinedBase * SAVINGS_GOAL_PCT;
 
             const infoEl = document.getElementById('home-savings-goal-info');
             if (infoEl) {
-                infoEl.innerText = `RM ${goal.toFixed(2)} — 20% surplus ${monthNames[lastMonthDate.getMonth()]}`;
+                infoEl.innerText = `RM ${goal.toFixed(2)} — 20% (surplus + baki gaji)`;
+            }
+            const breakdownEl = document.getElementById('home-savings-goal-breakdown');
+            if (breakdownEl) {
+                breakdownEl.innerText = `Surplus ${monthNames[lastMonthDate.getMonth()]}: RM ${surplusLM.toFixed(2)} + Baki Gaji: RM ${salaryNet.toFixed(2)}`;
             }
 
             const labels = [];
@@ -3657,6 +3671,7 @@
                                 <div class="flex-1 min-w-0">
                                     <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
                                     <p id="home-savings-goal-info" class="text-[10px] text-slate-400">Memuatkan...</p>
+                                    <p id="home-savings-goal-breakdown" class="text-[9px] text-slate-400 mt-0.5"></p>
                                 </div>
                                 <button type="button" onclick="openSavingsGoalModal()" class="w-7 h-7 flex-shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                                     <i class="fas fa-expand text-[9px]"></i>
