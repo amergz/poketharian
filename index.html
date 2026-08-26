@@ -2262,6 +2262,21 @@
             billViewDate = new Date(billViewDate.getFullYear(), billViewDate.getMonth() + dir, 1);
             renderBillReminderList();
         }
+        // Nama bil (isBill) yang pernah direkod SEBELUM bulan yang dipapar — jadi asas peringatan
+        // supaya bil yang pernah dibayar akan terus "diingatkan" bulan seterusnya walaupun belum
+        // direkod lagi, tanpa nyatakan jumlah (sebab jumlah bil berubah-ubah tiap bulan).
+        function getKnownBillNamesBefore(year, month) {
+            const cutoff = new Date(year, month, 1);
+            const names = new Set();
+            transactions.forEach(t => {
+                if (t.type === 'expense' && t.isBill && t.text) {
+                    const d = parseLocalDateStr(t.date);
+                    if (d < cutoff) names.add(t.text.trim());
+                }
+            });
+            return [...names];
+        }
+
         function renderBillReminderList() {
             const y = billViewDate.getFullYear(), m = billViewDate.getMonth();
             const labelEl = document.getElementById('bill-reminder-month-label');
@@ -2270,18 +2285,39 @@
             const total = bills.reduce((s, t) => s + t.amount, 0);
             const totalEl = document.getElementById('bill-reminder-total');
             if (totalEl) totalEl.innerText = total.toFixed(2);
+
+            // Bil yang pernah dibayar sebelum ini tapi BELUM direkod bulan yang dipapar sekarang
+            const paidNames = new Set(bills.map(t => t.text.trim().toLowerCase()));
+            const pendingReminders = getKnownBillNamesBefore(y, m).filter(n => !paidNames.has(n.toLowerCase()));
+
             const listEl = document.getElementById('bill-reminder-list');
             if (!listEl) return;
-            listEl.innerHTML = bills.length === 0
-                ? '<li class="text-[10px] text-slate-400 text-center py-4">Tiada bil direkodkan untuk bulan ini. Tekan "Tambah Rekod" di Laman Utama &amp; tandakan sebagai Bil Bulanan Wajib.</li>'
-                : bills.map(t => `
-                    <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 shadow-sleek">
-                        <div class="min-w-0">
-                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(t.text)}</p>
-                            <p class="text-[9px] text-slate-400">${escapeHtml(t.category)} • ${t.date}</p>
-                        </div>
-                        <span class="text-[11px] font-bold text-amber-500 flex-shrink-0">RM ${t.amount.toFixed(2)}</span>
-                    </li>`).join('');
+
+            if (bills.length === 0 && pendingReminders.length === 0) {
+                listEl.innerHTML = '<li class="text-[10px] text-slate-400 text-center py-4">Tiada bil direkodkan untuk bulan ini. Tekan "Tambah Rekod" di Laman Utama &amp; tandakan sebagai Bil Bulanan Wajib.</li>';
+                return;
+            }
+
+            const paidHtml = bills.map(t => `
+                <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 shadow-sleek">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(t.text)}</p>
+                        <p class="text-[9px] text-slate-400">${escapeHtml(t.category)} • ${t.date}</p>
+                    </div>
+                    <span class="text-[11px] font-bold text-amber-500 flex-shrink-0">RM ${t.amount.toFixed(2)}</span>
+                </li>`).join('');
+
+            // Peringatan bil belum direkod bulan ini — SENGAJA tiada jumlah RM dipaparkan.
+            const pendingHtml = pendingReminders.map(name => `
+                <li class="flex items-center justify-between bg-amber-50 dark:bg-amber-500/10 border border-dashed border-amber-300 dark:border-amber-500/30 rounded-xl px-3 py-2.5">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate">${escapeHtml(name)}</p>
+                        <p class="text-[9px] text-amber-500 font-semibold">Peringatan • belum direkod bulan ini</p>
+                    </div>
+                    <i class="fas fa-bell text-amber-400 text-[11px] flex-shrink-0"></i>
+                </li>`).join('');
+
+            listEl.innerHTML = paidHtml + pendingHtml;
         }
         function renderBillStatsCard() {
             const card = document.getElementById('bill-stat-card');
