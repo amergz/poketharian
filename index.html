@@ -142,9 +142,12 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased flex justify-center transition-colors duration-300">
 
+    <!-- Notifikasi Status Bajet (gaya "digunakan/jumlah; baki") -->
+    <div id="budget-toast" class="fixed left-1/2 -translate-x-1/2 top-3 z-[999] max-w-[92vw] w-auto px-4 py-2.5 rounded-2xl bg-slate-900/90 dark:bg-slate-700/95 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md opacity-0 pointer-events-none -translate-y-3 transition-all duration-300 whitespace-nowrap"></div>
+
     <!-- Mobile Frame -->
     <div class="w-full max-w-md min-h-screen relative overflow-x-hidden flex flex-col pb-24 shadow-2xl bg-slate-50 dark:bg-slate-900">
-        
+
         <!-- ========================================== -->
         <!-- TAB 1: DASHBOARD (Home & Calendar)         -->
         <!-- ========================================== -->
@@ -170,6 +173,14 @@
                         <span class="text-2xl mt-1 mr-1 text-indigo-200 font-medium">RM</span>
                         <span id="home-today-balance" class="text-white">0.00</span>
                     </h2>
+                </div>
+
+                <div id="payday-notification" class="hidden bg-amber-400/20 border border-amber-300/40 backdrop-blur-md rounded-2xl p-4 mb-4 relative z-10">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-7 h-7 rounded-lg bg-amber-400 text-white flex items-center justify-center flex-shrink-0"><i class="fas fa-bell text-[10px]"></i></div>
+                        <p class="text-[11px] font-bold text-white flex-1">Peringatan Sebelum Gaji — <span id="payday-days-left">0</span> hari lagi</p>
+                    </div>
+                    <ul id="payday-notification-list" class="space-y-1.5"></ul>
                 </div>
 
                 <div class="flex justify-between items-center bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 relative z-10">
@@ -3982,12 +3993,93 @@
             document.getElementById('plan-remaining').innerText = f.remaining.toFixed(2);
             document.getElementById('plan-surplus-amt').innerText = f.surplus.toFixed(2);
 
-            renderCalendar(); 
+            renderCalendar();
             renderWeeklyTrend();
             renderHomeFeatureWidgets();
             populateHistoryFilters();
-            renderFullHistory(); 
+            renderFullHistory();
             if(document.getElementById('tab-stats').classList.contains('active')) renderStatistics();
+            renderPaydayNotification();
+        }
+
+        // ==========================================================
+        // NOTIFIKASI SEBELUM GAJI (5 hari sebelum tarikh gaji)
+        // Semak: Pelan Pembayaran Hutang (min payment belum cukup), Peringatan Bil Wajib
+        // (bil biasa belum direkod kitaran ini), Sasaran Simpanan (surplus & dari gaji).
+        // Item hilang bila sudah dibayar/direkod (auto) atau ditanda selesai (manual).
+        // ==========================================================
+        function getPaydayDismissedKeys(cycleKey) {
+            const store = JSON.parse(localStorage.getItem('poket_payday_dismissed') || '{}');
+            return new Set(store[cycleKey] || []);
+        }
+        function dismissPaydayItem(cycleKey, itemKey) {
+            const store = JSON.parse(localStorage.getItem('poket_payday_dismissed') || '{}');
+            if (!store[cycleKey]) store[cycleKey] = [];
+            if (!store[cycleKey].includes(itemKey)) store[cycleKey].push(itemKey);
+            localStorage.setItem('poket_payday_dismissed', JSON.stringify(store));
+            renderPaydayNotification();
+        }
+
+        function renderPaydayNotification() {
+            const box = document.getElementById('payday-notification');
+            if (!box) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const { start: cycleStart, nextStart } = getCurrentPayCycle(today);
+            const cycleStartStr = getLocalYYYYMMDD(cycleStart);
+            const nextStartStr = getLocalYYYYMMDD(nextStart);
+            const daysLeft = Math.round((nextStart - today) / 86400000);
+
+            // Hanya tunjuk dalam tempoh 5 hari sebelum gaji (dan bukan lepas tarikh gaji).
+            if (daysLeft > 5 || daysLeft < 0) { box.classList.add('hidden'); return; }
+
+            const cycleKey = nextStartStr;
+            const dismissed = getPaydayDismissedKeys(cycleKey);
+            const items = [];
+
+            // 1) Pelan Pembayaran Hutang — hutang aktif, bayaran minimum belum cukup kitaran ini
+            (typeof getActiveDebts === 'function' ? getActiveDebts() : []).forEach(d => {
+                const key = `debt-${d.id}`;
+                if (dismissed.has(key)) return;
+                const min = getDebtMin(d);
+                if (min <= 0) return;
+                const paid = getDebtPayments(d).filter(p => p.date >= cycleStartStr && p.date < nextStartStr)
+                    .reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+                if (paid < min - 0.005) {
+                    items.push({ key, icon: 'fa-landmark', text: `Hutang "${escapeHtml(d.name)}" — bayar minimum RM ${min.toFixed(2)}` });
+                }
+            });
+
+            // 2) Peringatan Bil Wajib — bil (nama) yang pernah direkod isBill tapi belum direkod kitaran ini
+            const knownBillNames = [...new Set(transactions.filter(t => t.isBill).map(t => (t.text || '').trim().toLowerCase()).filter(Boolean))];
+            const recordedThisCycle = new Set(transactions.filter(t => t.isBill && t.date >= cycleStartStr && t.date < nextStartStr).map(t => (t.text || '').trim().toLowerCase()));
+            const missingBills = knownBillNames.filter(n => !recordedThisCycle.has(n));
+            if (missingBills.length > 0 && !dismissed.has('bills')) {
+                items.push({ key: 'bills', icon: 'fa-file-invoice-dollar', text: `${missingBills.length} Bil Bulanan Wajib belum direkod kitaran ini` });
+            }
+
+            // 3) Sasaran Simpanan — dari surplus & dari gaji (tiada auto-detect, boleh tanda selesai)
+            const savingsGoalEl = document.getElementById('savings-goal-amount');
+            const savingsGoalAmt = savingsGoalEl ? parseFloat(savingsGoalEl.innerText) || 0 : 0;
+            if (savingsGoalAmt > 0 && !dismissed.has('savings-surplus')) {
+                items.push({ key: 'savings-surplus', icon: 'fa-piggy-bank', text: `Sasaran Simpanan dari surplus — RM ${savingsGoalAmt.toFixed(2)}` });
+            }
+            const salarySavingsEl = document.getElementById('salary-savings-amount');
+            const salarySavingsAmt = salarySavingsEl ? parseFloat(salarySavingsEl.innerText) || 0 : 0;
+            if (salarySavingsAmt > 0 && !dismissed.has('savings-gaji')) {
+                items.push({ key: 'savings-gaji', icon: 'fa-sack-dollar', text: `Simpanan Dari Gaji — RM ${salarySavingsAmt.toFixed(2)}` });
+            }
+
+            if (items.length === 0) { box.classList.add('hidden'); return; }
+
+            box.classList.remove('hidden');
+            document.getElementById('payday-days-left').innerText = daysLeft;
+            document.getElementById('payday-notification-list').innerHTML = items.map(it => `
+                <li class="flex items-center justify-between bg-white/10 rounded-xl px-3 py-2">
+                    <span class="text-[10px] text-amber-50 flex items-center gap-1.5 min-w-0"><i class="fas ${it.icon} text-[9px] flex-shrink-0"></i><span class="truncate">${it.text}</span></span>
+                    <button type="button" onclick="dismissPaydayItem('${cycleKey}','${it.key}')" title="Tandakan selesai" class="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center flex-shrink-0 ml-2"><i class="fas fa-check text-[9px]"></i></button>
+                </li>`).join('');
         }
 
         document.getElementById('form-add').addEventListener('submit', (e) => {
@@ -4035,6 +4127,7 @@
             calcClear();
             closeAddModal();
             refreshData();
+            showBudgetToast();
         });
 
         function deleteTx(id) {
@@ -4277,6 +4370,22 @@
             localStorage.setItem('poket_plan', JSON.stringify(appPlan));
             alert('Tetapan berjaya disimpan!');
             refreshData();
+            showBudgetToast();
+        }
+
+        // --- Notifikasi Status Bajet: "RM digunakan/RM jumlah; RM baki" ---
+        let budgetToastTimer = null;
+        function showBudgetToast() {
+            const el = document.getElementById('budget-toast');
+            if (!el) return;
+            const f = calculateFinance();
+            el.innerText = `Bajet: RM ${f.currentSpent.toFixed(2)}/RM ${f.totalFunds.toFixed(2)}; RM ${f.remaining.toFixed(2)} baki`;
+            el.classList.remove('opacity-0', '-translate-y-3', 'pointer-events-none');
+
+            clearTimeout(budgetToastTimer);
+            budgetToastTimer = setTimeout(() => {
+                el.classList.add('opacity-0', '-translate-y-3', 'pointer-events-none');
+            }, 3200);
         }
 
         // Tambah (top-up) jumlah terus ke Bajet Bulanan semasa, supaya "Status Bulan Ini >
@@ -4291,6 +4400,7 @@
             localStorage.setItem('poket_plan', JSON.stringify(appPlan));
             document.getElementById('setting-budget').value = appPlan.monthlyBudget;
             refreshData();
+            showBudgetToast();
             alert(`RM ${amt.toFixed(2)} berjaya ditambah. Bajet Bulanan kini RM ${appPlan.monthlyBudget.toFixed(2)}.`);
         }
 
