@@ -142,12 +142,9 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased flex justify-center transition-colors duration-300">
 
-    <!-- Notifikasi Status Bajet (gaya "digunakan/jumlah; baki") -->
-    <div id="budget-toast" class="fixed left-1/2 -translate-x-1/2 top-3 z-[999] max-w-[92vw] w-auto px-4 py-2.5 rounded-2xl bg-slate-900/90 dark:bg-slate-700/95 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md opacity-0 pointer-events-none -translate-y-3 transition-all duration-300 whitespace-nowrap"></div>
-
     <!-- Mobile Frame -->
     <div class="w-full max-w-md min-h-screen relative overflow-x-hidden flex flex-col pb-24 shadow-2xl bg-slate-50 dark:bg-slate-900">
-
+        
         <!-- ========================================== -->
         <!-- TAB 1: DASHBOARD (Home & Calendar)         -->
         <!-- ========================================== -->
@@ -163,7 +160,6 @@
                     <div class="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-right">
                         <p class="text-[9px] uppercase tracking-wider text-indigo-100">Baki Bulan</p>
                         <p class="text-sm font-bold"><span id="days-remaining-count">0</span> Hari</p>
-                        <p class="text-[8px] text-indigo-200 mt-0.5" id="pay-cycle-range"></p>
                     </div>
                 </div>
 
@@ -173,14 +169,6 @@
                         <span class="text-2xl mt-1 mr-1 text-indigo-200 font-medium">RM</span>
                         <span id="home-today-balance" class="text-white">0.00</span>
                     </h2>
-                </div>
-
-                <div id="payday-notification" class="hidden bg-amber-400/20 border border-amber-300/40 backdrop-blur-md rounded-2xl p-4 mb-4 relative z-10">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-7 h-7 rounded-lg bg-amber-400 text-white flex items-center justify-center flex-shrink-0"><i class="fas fa-bell text-[10px]"></i></div>
-                        <p class="text-[11px] font-bold text-white flex-1">Peringatan Sebelum Gaji — <span id="payday-days-left">0</span> hari lagi</p>
-                    </div>
-                    <ul id="payday-notification-list" class="space-y-1.5"></ul>
                 </div>
 
                 <div class="flex justify-between items-center bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 relative z-10">
@@ -535,8 +523,7 @@
                 </div>
 
                 <div class="bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 rounded-3xl shadow-sleek mb-6">
-                    <h3 class="text-xs font-medium text-slate-300 uppercase tracking-wider mb-1"><i class="fas fa-bullseye mr-2"></i>Status Bulan Ini</h3>
-                    <p class="text-[10px] text-slate-400 mb-3" id="plan-cycle-range"></p>
+                    <h3 class="text-xs font-medium text-slate-300 uppercase tracking-wider mb-4"><i class="fas fa-bullseye mr-2"></i>Status Bulan Ini</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between items-end border-b border-white/10 pb-2">
                             <p class="text-xs text-slate-400">Total Dana Semasa</p>
@@ -555,12 +542,12 @@
 
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2">
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50">
-                        <div class="flex items-center justify-between mb-2">
-                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bajet Bulanan (RM)</label>
-                            <button type="button" onclick="addToMonthlyBudget()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg hover:bg-indigo-100 transition-colors"><i class="fas fa-plus mr-1"></i>Tambah</button>
+                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wider">Bajet Bulanan (RM)</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="setting-budget" class="flex-1 min-w-0 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-200 border-transparent">
+                            <button type="button" onclick="addBudgetTopup()" title="Tambah dana ke bulan ini" class="w-12 flex-shrink-0 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center"><i class="fas fa-plus"></i></button>
                         </div>
-                        <input type="number" id="setting-budget" class="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-200 border-transparent">
-                        <p class="text-[9px] text-slate-400 mt-1.5">Tekan "Simpan Tetapan" untuk tetapkan/gantikan nilai bajet, atau guna butang "Tambah" untuk tambah (top-up) terus ke Total Dana Semasa tanpa timpa nilai sedia ada.</p>
+                        <p class="text-[9px] text-slate-400 mt-1.5">Tekan <b>+</b> untuk terus tambah dana ke <b>Total Dana Semasa</b> bulan ini sahaja (RM <span id="plan-topup-amt">0.00</span> ditambah bulan ini). Tekan <b>Simpan Tetapan</b> di bawah untuk tukar bajet asas berulang setiap bulan.</p>
                     </div>
 
                     <div class="p-4 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
@@ -655,20 +642,11 @@
 
                 <form id="form-add" class="space-y-4">
                     <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl relative">
-                        <div id="toggle-bg" class="absolute w-1/3 h-full bg-white dark:bg-slate-700 rounded-xl shadow-sm transition-transform duration-300 left-0 top-0"></div>
+                        <div id="toggle-bg" class="absolute w-1/2 h-full bg-white dark:bg-slate-700 rounded-xl shadow-sm transition-transform duration-300 left-0 top-0"></div>
                         <button type="button" id="btn-expense" class="flex-1 py-3 text-sm font-bold text-rose-500 dark:text-rose-400 z-10 transition-colors">Belanja</button>
                         <button type="button" id="btn-income" class="flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors">Pendapatan</button>
-                        <button type="button" id="btn-savings" class="flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors">Simpan</button>
                     </div>
                     <input type="hidden" id="input-type" value="expense">
-
-                    <div id="savings-transfer-wrap" class="hidden bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
-                        <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Pindah Ke Akaun Simpanan</label>
-                        <select id="input-savings-account" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none text-sm font-medium">
-                            <option value="">- Pilih akaun simpanan -</option>
-                        </select>
-                        <p class="text-[9px] text-slate-400 px-2 pb-1">Jumlah di bawah akan dipindahkan terus ke akaun simpanan yang dipilih.</p>
-                    </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
@@ -704,61 +682,46 @@
                         </div>
                     </div>
                     
-                    <!-- Sleek Calculator -->
-                    <div id="calculator-box" class="hidden mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-sleek">
-                        <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl mb-3 text-right font-mono text-2xl font-bold text-indigo-600 dark:text-indigo-400 overflow-x-auto tracking-widest" id="calc-display">0</div>
-                        <div class="grid grid-cols-4 gap-2">
-                            <button type="button" onclick="calcAppend('7')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">7</button>
-                            <button type="button" onclick="calcAppend('8')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">8</button>
-                            <button type="button" onclick="calcAppend('9')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">9</button>
-                            <button type="button" onclick="calcAppend('/')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">÷</button>
-                            
-                            <button type="button" onclick="calcAppend('4')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">4</button>
-                            <button type="button" onclick="calcAppend('5')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">5</button>
-                            <button type="button" onclick="calcAppend('6')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">6</button>
-                            <button type="button" onclick="calcAppend('*')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">×</button>
-                            
-                            <button type="button" onclick="calcAppend('1')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">1</button>
-                            <button type="button" onclick="calcAppend('2')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">2</button>
-                            <button type="button" onclick="calcAppend('3')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">3</button>
-                            <button type="button" onclick="calcAppend('-')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">-</button>
-                            
-                            <button type="button" onclick="calcClear()" class="calc-btn py-3 bg-rose-50 dark:bg-rose-500/20 text-rose-500 font-bold text-lg">C</button>
-                            <button type="button" onclick="calcAppend('0')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">0</button>
-                            <button type="button" onclick="calcAppend('.')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">.</button>
-                            <button type="button" onclick="calcAppend('+')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">+</button>
-                        </div>
-                        <div class="flex space-x-2 mt-2">
-                            <button type="button" onclick="calcDelete()" class="w-1/4 py-3 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 font-bold rounded-xl text-xs"><i class="fas fa-backspace"></i></button>
-                            <button type="button" onclick="calcApply()" class="w-3/4 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md">Guna Nilai</button>
+                    <!-- Sleek Calculator: FLOATING popup (fixed & centered) supaya butang "Guna Nilai" sentiasa kelihatan walau skrin telefon kecil -->
+                    <div id="calculator-box" class="hidden fixed inset-0 z-[70] bg-slate-900/50 backdrop-blur-sm items-center justify-center p-4" onclick="if(event.target===this) toggleCalculator()">
+                        <div class="w-full max-w-xs p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl" onclick="event.stopPropagation()">
+                            <div class="flex items-center justify-between mb-2 px-1">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"><i class="fas fa-calculator mr-1"></i>Kalkulator</span>
+                                <button type="button" onclick="toggleCalculator()" class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center"><i class="fas fa-times text-[10px]"></i></button>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl mb-3 text-right font-mono text-2xl font-bold text-indigo-600 dark:text-indigo-400 overflow-x-auto tracking-widest" id="calc-display">0</div>
+                            <div class="grid grid-cols-4 gap-2">
+                                <button type="button" onclick="calcAppend('7')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">7</button>
+                                <button type="button" onclick="calcAppend('8')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">8</button>
+                                <button type="button" onclick="calcAppend('9')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">9</button>
+                                <button type="button" onclick="calcAppend('/')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">÷</button>
+
+                                <button type="button" onclick="calcAppend('4')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">4</button>
+                                <button type="button" onclick="calcAppend('5')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">5</button>
+                                <button type="button" onclick="calcAppend('6')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">6</button>
+                                <button type="button" onclick="calcAppend('*')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">×</button>
+
+                                <button type="button" onclick="calcAppend('1')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">1</button>
+                                <button type="button" onclick="calcAppend('2')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">2</button>
+                                <button type="button" onclick="calcAppend('3')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">3</button>
+                                <button type="button" onclick="calcAppend('-')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">-</button>
+
+                                <button type="button" onclick="calcClear()" class="calc-btn py-3 bg-rose-50 dark:bg-rose-500/20 text-rose-500 font-bold text-lg">C</button>
+                                <button type="button" onclick="calcAppend('0')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">0</button>
+                                <button type="button" onclick="calcAppend('.')" class="calc-btn py-3 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-lg">.</button>
+                                <button type="button" onclick="calcAppend('+')" class="calc-btn py-3 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-lg">+</button>
+                            </div>
+                            <div class="flex space-x-2 mt-2">
+                                <button type="button" onclick="calcDelete()" class="w-1/4 py-3 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 font-bold rounded-xl text-xs"><i class="fas fa-backspace"></i></button>
+                                <button type="button" onclick="calcApply()" class="w-3/4 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md">Guna Nilai</button>
+                            </div>
                         </div>
                     </div>
 
                     <label class="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 cursor-pointer">
                         <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300"><i class="fas fa-bell text-amber-400 mr-1"></i>Tandakan sebagai Bil Bulanan Wajib</span>
-                        <input type="checkbox" id="input-is-bill" class="w-5 h-5 accent-amber-500" onchange="toggleBillLinkSelect()">
+                        <input type="checkbox" id="input-is-bill" class="w-5 h-5 accent-amber-500">
                     </label>
-
-                    <div id="bill-link-wrap" class="hidden bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
-                        <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Pilih Bil Bulanan Wajib</label>
-                        <select id="input-bill-select" onchange="applyBillSelectChoice()" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none text-sm font-medium">
-                            <option value="">- Bil baharu (taip nama di Keterangan) -</option>
-                        </select>
-                        <p class="text-[9px] text-slate-400 px-2 pb-1">Pilih bil sedia ada supaya nama sepadan (cross-check) dengan Peringatan Bil Wajib, atau biarkan "Bil baharu" untuk bil pertama kali.</p>
-                    </div>
-
-                    <label class="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 cursor-pointer">
-                        <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300"><i class="fas fa-landmark text-rose-400 mr-1"></i>Tandakan sebagai Hutang Bank Wajib</span>
-                        <input type="checkbox" id="input-is-debt" class="w-5 h-5 accent-rose-500" onchange="toggleDebtLinkSelect()">
-                    </label>
-
-                    <div id="debt-link-wrap" class="hidden bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
-                        <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Pilih Hutang (Pelan Pembayaran Hutang)</label>
-                        <select id="input-debt-select" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none text-sm font-medium">
-                            <option value="">- Pilih hutang -</option>
-                        </select>
-                        <p class="text-[9px] text-slate-400 px-2 pb-1">Jumlah rekod ini akan direkodkan terus sebagai pembayaran (principal paid) untuk hutang yang dipilih, dan baki akan dikemaskini automatik di Pelan Pembayaran Hutang.</p>
-                    </div>
 
                     <button type="submit" id="btn-submit-tx" class="w-full bg-slate-800 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-sleek hover:bg-slate-900 transition-all mt-4 text-sm tracking-wide">
                         SIMPAN REKOD
@@ -1514,9 +1477,21 @@
         }
 
         let transactions = JSON.parse(localStorage.getItem('poket_tx')) || [];
-        let dismissedBillNames = JSON.parse(localStorage.getItem('poket_dismissed_bills')) || [];
-        function saveDismissedBillNames() { localStorage.setItem('poket_dismissed_bills', JSON.stringify(dismissedBillNames)); }
         let appPlan = JSON.parse(localStorage.getItem('poket_plan')) || { monthlyBudget: 0, carryForward: true };
+        // Tambahan dana ad-hoc ke Total Dana Semasa, disimpan ikut bulan (YYYY-MM) supaya tidak jadi bajet berulang
+        let budgetTopups = JSON.parse(localStorage.getItem('poket_budget_topups')) || {};
+        function saveBudgetTopups() { localStorage.setItem('poket_budget_topups', JSON.stringify(budgetTopups)); }
+        function addBudgetTopup() {
+            const input = document.getElementById('setting-budget');
+            const val = parseFloat(input.value);
+            if (isNaN(val) || val <= 0) { alert('Sila masukkan jumlah sah untuk ditambah.'); return; }
+            const monthStr = getLocalYYYYMMDD().substring(0, 7);
+            budgetTopups[monthStr] = (budgetTopups[monthStr] || 0) + val;
+            saveBudgetTopups();
+            input.value = '';
+            alert('RM ' + val.toFixed(2) + ' berjaya ditambah ke Total Dana Semasa bulan ini!');
+            refreshData();
+        }
         let currentTheme = localStorage.getItem('poket_theme') || 'light';
         
         let txFilter = 'daily';
@@ -1558,18 +1533,9 @@
             const dataToExport = { transactions: transactions, plan: appPlan, theme: currentTheme };
             const dataStr = JSON.stringify(dataToExport);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-
-            // Nama fail: "Poket Harian - DD-MM-YYYY HH.MM.SS.json" supaya tarikh & masa backup
-            // senang dibaca terus (bukan angka timestamp).
-            const now = new Date();
-            const pad = (n) => String(n).padStart(2, '0');
-            const tarikh = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
-            const masa = `${pad(now.getHours())}.${pad(now.getMinutes())}.${pad(now.getSeconds())}`;
-            const fileName = `Poket Harian - ${tarikh} ${masa}.json`;
-
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', fileName);
+            linkElement.setAttribute('download', `poket_harian_backup_${new Date().getTime()}.json`);
             linkElement.click();
         }
 
@@ -2281,37 +2247,6 @@
             billViewDate = new Date(billViewDate.getFullYear(), billViewDate.getMonth() + dir, 1);
             renderBillReminderList();
         }
-        // Nama bil (isBill) yang pernah direkod SEBELUM bulan yang dipapar — jadi asas peringatan
-        // supaya bil yang pernah dibayar akan terus "diingatkan" bulan seterusnya walaupun belum
-        // direkod lagi, tanpa nyatakan jumlah (sebab jumlah bil berubah-ubah tiap bulan).
-        function getKnownBillNamesBefore(year, month) {
-            const cutoff = new Date(year, month, 1);
-            const names = new Set();
-            transactions.forEach(t => {
-                if (t.type === 'expense' && t.isBill && t.text) {
-                    const d = parseLocalDateStr(t.date);
-                    if (d < cutoff) names.add(t.text.trim());
-                }
-            });
-            return [...names].filter(n => !dismissedBillNames.some(dn => dn.toLowerCase() === n.toLowerCase()));
-        }
-        function dismissBillReminder(name) {
-            if (!confirm(`Buang peringatan untuk "${name}"? Ia tidak akan dipaparkan lagi sehingga anda rekod semula bil ini.`)) return;
-            if (!dismissedBillNames.some(dn => dn.toLowerCase() === name.toLowerCase())) {
-                dismissedBillNames.push(name);
-                saveDismissedBillNames();
-            }
-            renderBillReminderList();
-        }
-        function editBillTxFromReminder(id) {
-            closeBillReminderModal();
-            editTx(id);
-        }
-        function deleteBillTxFromReminder(id) {
-            deleteTx(id);
-            renderBillReminderList();
-        }
-
         function renderBillReminderList() {
             const y = billViewDate.getFullYear(), m = billViewDate.getMonth();
             const labelEl = document.getElementById('bill-reminder-month-label');
@@ -2320,44 +2255,36 @@
             const total = bills.reduce((s, t) => s + t.amount, 0);
             const totalEl = document.getElementById('bill-reminder-total');
             if (totalEl) totalEl.innerText = total.toFixed(2);
-
-            // Bil yang pernah dibayar sebelum ini tapi BELUM direkod bulan yang dipapar sekarang
-            const paidNames = new Set(bills.map(t => t.text.trim().toLowerCase()));
-            const pendingReminders = getKnownBillNamesBefore(y, m).filter(n => !paidNames.has(n.toLowerCase()));
-
             const listEl = document.getElementById('bill-reminder-list');
             if (!listEl) return;
+            listEl.innerHTML = bills.length === 0
+                ? '<li class="text-[10px] text-slate-400 text-center py-4">Tiada bil direkodkan untuk bulan ini. Tekan "Tambah Rekod" di Laman Utama &amp; tandakan sebagai Bil Bulanan Wajib.</li>'
+                : bills.map(t => `
+                    <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 shadow-sleek">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(t.text)}</p>
+                            <p class="text-[9px] text-slate-400">${escapeHtml(t.category)} • ${t.date}</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <span class="text-[11px] font-bold text-amber-500">RM ${t.amount.toFixed(2)}</span>
+                            <button type="button" onclick="editBillTx(${t.id})" class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 flex items-center justify-center"><i class="fas fa-pen text-[9px]"></i></button>
+                            <button type="button" onclick="deleteBillTx(${t.id})" class="w-6 h-6 rounded-full bg-rose-50 dark:bg-rose-500/15 text-rose-500 flex items-center justify-center"><i class="fas fa-trash-alt text-[9px]"></i></button>
+                        </div>
+                    </li>`).join('');
+        }
 
-            if (bills.length === 0 && pendingReminders.length === 0) {
-                listEl.innerHTML = '<li class="text-[10px] text-slate-400 text-center py-4">Tiada bil direkodkan untuk bulan ini. Tekan "Tambah Rekod" di Laman Utama &amp; tandakan sebagai Bil Bulanan Wajib.</li>';
-                return;
-            }
+        function editBillTx(id) {
+            closeBillReminderModal();
+            editTx(id);
+        }
 
-            const paidHtml = bills.map(t => `
-                <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 shadow-sleek gap-2">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(t.text)}</p>
-                        <p class="text-[9px] text-slate-400">${escapeHtml(t.category)} • ${t.date}</p>
-                    </div>
-                    <span class="text-[11px] font-bold text-amber-500 flex-shrink-0">RM ${t.amount.toFixed(2)}</span>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <button type="button" onclick="editBillTxFromReminder(${t.id})" class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center"><i class="fas fa-pen text-[9px]"></i></button>
-                        <button type="button" onclick="deleteBillTxFromReminder(${t.id})" class="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center"><i class="fas fa-trash text-[9px]"></i></button>
-                    </div>
-                </li>`).join('');
-
-            // Peringatan bil belum direkod bulan ini — SENGAJA tiada jumlah RM dipaparkan.
-            const pendingHtml = pendingReminders.map(name => `
-                <li class="flex items-center justify-between bg-amber-50 dark:bg-amber-500/10 border border-dashed border-amber-300 dark:border-amber-500/30 rounded-xl px-3 py-2.5 gap-2">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate">${escapeHtml(name)}</p>
-                        <p class="text-[9px] text-amber-500 font-semibold">Peringatan • belum direkod bulan ini</p>
-                    </div>
-                    <i class="fas fa-bell text-amber-400 text-[11px] flex-shrink-0"></i>
-                    <button type="button" onclick="dismissBillReminder('${name.replace(/'/g, "\\'")}')" class="w-6 h-6 rounded-lg bg-white/70 dark:bg-slate-800 text-amber-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-times text-[10px]"></i></button>
-                </li>`).join('');
-
-            listEl.innerHTML = paidHtml + pendingHtml;
+        function deleteBillTx(id) {
+            if (!confirm('Padam bil ini?')) return;
+            transactions = transactions.filter(t => t.id !== id);
+            localStorage.setItem('poket_tx', JSON.stringify(transactions));
+            refreshData();
+            renderBillReminderList();
+            if (typeof renderBillStatsCard === 'function') renderBillStatsCard();
         }
         function renderBillStatsCard() {
             const card = document.getElementById('bill-stat-card');
@@ -2536,28 +2463,11 @@
             const now = new Date();
             const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             const lm = getMonthNetSurplus(lastMonthDate.getFullYear(), lastMonthDate.getMonth());
-            const surplusLM = lm.surplus > 0 ? lm.surplus : 0;
-
-            // Sasaran Simpanan = (Surplus Bulan Lepas x 20% tetap) + (Baki Gaji Selepas Komitmen
-            // x Kadar Simpanan boleh ubah, dari ciri "Simpanan Dari Gaji"). Setiap sumber
-            // didarab dengan kadarnya SENDIRI, bukan digabung dahulu baru didarab satu kadar.
-            const savedIncome = parseFloat(localStorage.getItem('poket_salary_savings_income')) || 0;
-            const totalCommitment = (typeof getTotalCommitments === 'function') ? getTotalCommitments() : 0;
-            const salaryNet = Math.max(0, savedIncome - totalCommitment);
-            const salaryPct = parseFloat(localStorage.getItem('poket_salary_savings_pct'));
-            const salaryRate = (isNaN(salaryPct) ? 20 : salaryPct) / 100;
-
-            const surplusPortion = surplusLM * SAVINGS_GOAL_PCT;
-            const salaryPortion = salaryNet * salaryRate;
-            const goal = surplusPortion + salaryPortion;
+            const goal = lm.surplus > 0 ? lm.surplus * SAVINGS_GOAL_PCT : 0;
 
             const infoEl = document.getElementById('home-savings-goal-info');
             if (infoEl) {
-                infoEl.innerText = `RM ${goal.toFixed(2)} — 20% surplus + ${(salaryRate * 100).toFixed(0)}% baki gaji`;
-            }
-            const breakdownEl = document.getElementById('home-savings-goal-breakdown');
-            if (breakdownEl) {
-                breakdownEl.innerText = `(Surplus ${monthNames[lastMonthDate.getMonth()]} RM ${surplusLM.toFixed(2)} × 20% = RM ${surplusPortion.toFixed(2)}) + (Baki Gaji RM ${salaryNet.toFixed(2)} × ${(salaryRate * 100).toFixed(0)}% = RM ${salaryPortion.toFixed(2)})`;
+                infoEl.innerText = `RM ${goal.toFixed(2)} — 20% surplus ${monthNames[lastMonthDate.getMonth()]}`;
             }
 
             const labels = [];
@@ -2811,7 +2721,7 @@
                 : list.map(p => `
                     <li class="flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 rounded-xl px-3 py-2">
                         <div>
-                            <p class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">- RM ${(parseFloat(p.amount) || 0).toFixed(2)} ${p.txId ? '<span class="ml-1 text-[8px] font-bold uppercase tracking-wide bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-full align-middle">Auto dari rekod</span>' : ''}</p>
+                            <p class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">- RM ${(parseFloat(p.amount) || 0).toFixed(2)}</p>
                             <p class="text-[9px] text-slate-400">${p.date ? parseLocalDateStr(p.date).toLocaleDateString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</p>
                         </div>
                         <button type="button" onclick="deleteDebtPayment(${p.id})" class="text-slate-300 dark:text-slate-500 hover:text-rose-500 w-6 h-6 flex items-center justify-center"><i class="fas fa-trash-alt text-[10px]"></i></button>
@@ -2840,20 +2750,7 @@
 
         function deleteDebtPayment(pid) {
             const debt = debts.find(d => d.id === currentEditDebtId);
-            if (!debt) return;
-            const payment = getDebtPayments(debt).find(p => p.id === pid);
-            const msg = payment && payment.txId
-                ? 'Rekod pembayaran ini datang secara automatik dari Tambah Rekod (Hutang Bank Wajib). Padam di sini sahaja? (Rekod transaksi asal di Sejarah tidak akan dipadam, tapi tidak lagi dikira sebagai pembayaran hutang.)'
-                : 'Padam rekod pembayaran ini?';
-            if (!confirm(msg)) return;
-
-            // Jika pembayaran ini dipautkan dengan transaksi (Tambah Rekod), lerai pautan pada
-            // transaksi asal supaya ia tidak dijana semula secara automatik bila diedit kelak.
-            if (payment && payment.txId) {
-                const tx = transactions.find(t => t.id === payment.txId);
-                if (tx) { tx.isDebtPayment = false; tx.debtId = null; localStorage.setItem('poket_tx', JSON.stringify(transactions)); }
-            }
-
+            if (!debt || !confirm('Padam rekod pembayaran ini?')) return;
             debt.payments = getDebtPayments(debt).filter(p => p.id !== pid);
             saveDebts();
             renderDebtPayments();
@@ -3632,7 +3529,7 @@
         const featureCatalog = [
             { id: 'import-bank', name: 'Import Penyata Bank', desc: 'Muat naik CSV Maybank / TnG terus jadi rekod', icon: 'fa-file-import', iconWrap: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' },
             { id: 'savings-goal', name: 'Sasaran Simpanan', desc: 'Tetapkan matlamat & jejak kemajuan simpanan', icon: 'fa-piggy-bank', iconWrap: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
-            { id: 'bill-reminder', name: 'Peringatan Bil Wajib', desc: 'Tandakan bil semasa Tambah Rekod — jumlah ikut bulan, masuk statistik & boleh jadi komitmen', icon: 'fa-bell', iconWrap: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
+            { id: 'bill-reminder', name: 'Peringatan Bil Wajib', desc: 'Notifikasi automatik sebelum tarikh akhir bayaran', icon: 'fa-bell', iconWrap: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' },
             { id: 'multi-account', name: 'Berbilang Akaun Bank', desc: 'Uruskan Maybank, TnG, CIMB dll berasingan', icon: 'fa-building-columns', iconWrap: 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400' },
             { id: 'forecast', name: 'Ramalan Bajet Bulanan', desc: 'Cadangan bajet ikut kategori — purata 3 bulan lepas', icon: 'fa-wand-magic-sparkles', iconWrap: 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' },
             { id: '3d-costing', name: 'Pengiraan 3D Costing', desc: 'Kira & anggar kos projek/pembinaan secara 3D', icon: 'fa-cube', iconWrap: 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' },
@@ -3714,7 +3611,6 @@
                                 <div class="flex-1 min-w-0">
                                     <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
                                     <p id="home-savings-goal-info" class="text-[10px] text-slate-400">Memuatkan...</p>
-                                    <p id="home-savings-goal-breakdown" class="text-[9px] text-slate-400 mt-0.5"></p>
                                 </div>
                                 <button type="button" onclick="openSavingsGoalModal()" class="w-7 h-7 flex-shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                                     <i class="fas fa-expand text-[9px]"></i>
@@ -3760,25 +3656,6 @@
                             </button>
                         </div>`;
                 }
-                if (f.id === 'bill-reminder') {
-                    return `
-                        <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 fade-in-widget">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-200">${f.name}</p>
-                                    <p id="home-bill-reminder-info" class="text-[10px] text-slate-400">Memuatkan...</p>
-                                </div>
-                                <button type="button" onclick="openBillReminderModal()" class="w-7 h-7 flex-shrink-0 rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                    <i class="fas fa-expand text-[9px]"></i>
-                                </button>
-                                <button type="button" onclick="disableFeatureFromHome('bill-reminder')" class="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center">
-                                    <i class="fas fa-times text-[10px]"></i>
-                                </button>
-                            </div>
-                            <button type="button" onclick="prepareNewTx(); setTimeout(()=>{ const cb=document.getElementById('input-is-bill'); if(cb) cb.checked = true; },60)" class="w-full py-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold"><i class="fas fa-plus mr-1"></i>Tambah Bil Bulanan</button>
-                        </div>`;
-                }
                 return `
                     <div class="neo-card bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 flex items-center gap-3 fade-in-widget">
                         <div class="w-10 h-10 rounded-xl ${f.iconWrap} flex items-center justify-center flex-shrink-0"><i class="fas ${f.icon}"></i></div>
@@ -3801,17 +3678,6 @@
             if (enabledFeatures.includes('debt-plan')) {
                 renderHomeDebtPlanWidget();
             }
-            if (enabledFeatures.includes('bill-reminder')) {
-                const infoEl = document.getElementById('home-bill-reminder-info');
-                if (infoEl) {
-                    const now = new Date();
-                    const bills = getMonthlyBills(now.getFullYear(), now.getMonth());
-                    const total = bills.reduce((s, t) => s + t.amount, 0);
-                    infoEl.innerText = bills.length === 0
-                        ? 'Belum ada bil bulan ini'
-                        : `${bills.length} bil • RM ${total.toFixed(2)}/bln`;
-                }
-            }
         }
 
         function disableFeatureFromHome(id) {
@@ -3827,21 +3693,16 @@
         function openAddModal() { modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); }
         function closeAddModal() {
             modal.classList.add('opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); document.getElementById('calculator-box').classList.add('hidden'); }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); document.getElementById('calculator-box').classList.add('hidden'); document.getElementById('calculator-box').classList.remove('flex'); }, 300);
         }
 
         function prepareNewTx() {
             currentEditId = null;
             document.getElementById('form-add').reset();
-            document.getElementById('input-date').value = selectedCalendarDateStr;
+            document.getElementById('input-date').value = selectedCalendarDateStr; 
             document.getElementById('input-amount').value = '';
             calcClear();
             setInputType('expense');
-            document.getElementById('input-is-bill').checked = false;
-            toggleBillLinkSelect();
-            populateDebtLinkSelect();
-            document.getElementById('input-is-debt').checked = false;
-            toggleDebtLinkSelect();
             document.getElementById('modal-title').innerText = "Tambah Rekod";
             document.getElementById('btn-submit-tx').innerText = "SIMPAN REKOD";
             openAddModal();
@@ -3850,170 +3711,43 @@
         function editTx(id) {
             const tx = transactions.find(t => t.id === id);
             if (!tx) return;
-
+            
             currentEditId = id;
             setInputType(tx.type);
             document.getElementById('input-date').value = tx.date;
-
+            
             setTimeout(() => { document.getElementById('input-category').value = tx.category; }, 50);
 
             document.getElementById('input-text').value = tx.text;
             document.getElementById('input-is-bill').checked = !!tx.isBill;
-            toggleBillLinkSelect();
-            populateDebtLinkSelect();
-            document.getElementById('input-is-debt').checked = !!tx.isDebtPayment;
-            toggleDebtLinkSelect();
-            if (tx.isDebtPayment && tx.debtId) document.getElementById('input-debt-select').value = tx.debtId;
-            if (tx.type === 'savings' && tx.savingsAccountId && document.getElementById('input-savings-account')) {
-                document.getElementById('input-savings-account').value = tx.savingsAccountId;
-            }
             document.getElementById('input-amount').value = tx.amount.toFixed(2);
             calcExpr = tx.amount.toString();
             document.getElementById('calc-display').innerText = calcExpr;
-
+            
             document.getElementById('modal-title').innerText = "Kemaskini Rekod";
             document.getElementById('btn-submit-tx').innerText = "KEMASKINI REKOD";
             openAddModal();
         }
 
-        // --- Bil Bulanan Wajib: pilih dari senarai bil sedia ada supaya nama sepadan (cross-check)
-        // dengan Peringatan Bil Wajib (yang padankan ikut teks Keterangan, huruf kecil/besar diabaikan).
-        function getKnownBillNames() {
-            const names = new Set();
-            transactions.forEach(t => { if (t.type === 'expense' && t.isBill && t.text) names.add(t.text.trim()); });
-            return [...names].sort((a, b) => a.localeCompare(b));
-        }
-
-        function toggleBillLinkSelect() {
-            const cb = document.getElementById('input-is-bill');
-            const wrap = document.getElementById('bill-link-wrap');
-            if (!cb || !wrap) return;
-            wrap.classList.toggle('hidden', !cb.checked);
-            if (cb.checked) populateBillSelect();
-        }
-
-        function populateBillSelect() {
-            const sel = document.getElementById('input-bill-select');
-            if (!sel) return;
-            const names = getKnownBillNames();
-            sel.innerHTML = '<option value="">- Bil baharu (taip nama di Keterangan) -</option>' +
-                names.map(n => `<option value="${escapeHtmlAttr(n)}">${escapeHtml(n)}</option>`).join('');
-
-            // Jika Keterangan semasa dah sepadan dengan salah satu bil sedia ada (cth: sedang edit
-            // rekod lama), pra-pilih terus supaya jelas ia dipautkan dengan bil yang sama.
-            const currentText = (document.getElementById('input-text').value || '').trim();
-            if (currentText && names.some(n => n.toLowerCase() === currentText.toLowerCase())) {
-                sel.value = names.find(n => n.toLowerCase() === currentText.toLowerCase());
-            }
-        }
-
-        // Bila pilih bil sedia ada dari dropdown, auto-isi Keterangan dengan nama SAMA PERSIS
-        // (case-sensitive) supaya padanan dengan Peringatan Bil Wajib tepat 100%.
-        function applyBillSelectChoice() {
-            const sel = document.getElementById('input-bill-select');
-            if (sel && sel.value) document.getElementById('input-text').value = sel.value;
-        }
-
-        // --- Hutang Bank Wajib: pautkan rekod transaksi terus ke Pelan Pembayaran Hutang ---
-        function toggleDebtLinkSelect() {
-            const cb = document.getElementById('input-is-debt');
-            const wrap = document.getElementById('debt-link-wrap');
-            if (!cb || !wrap) return;
-            wrap.classList.toggle('hidden', !cb.checked);
-        }
-
-        function populateDebtLinkSelect() {
-            const sel = document.getElementById('input-debt-select');
-            if (!sel) return;
-            const current = sel.value;
-            const list = debts.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-            sel.innerHTML = '<option value="">- Pilih hutang -</option>' +
-                list.map(d => `<option value="${d.id}">${escapeHtml(d.name)} (Baki: RM ${getDebtCurrentBalance(d).toFixed(2)})</option>`).join('');
-            if (list.some(d => String(d.id) === String(current))) sel.value = current;
-        }
-
-        // Sync rekod pembayaran hutang (dari Tambah Rekod) ke dalam objek `debts` supaya
-        // Pelan Pembayaran Hutang terus dikemaskini automatik. `txId` dipakai sebagai penanda
-        // supaya rekod boleh dikemaskini/dipadam semula bila transaksi diedit/dipadam.
-        function syncDebtPaymentFromTx(txId, txData) {
-            let changed = false;
-            // Buang dahulu rekod pembayaran lama (jika ada) yang dipautkan ke transaksi ini,
-            // di mana-mana hutang, supaya tiada pembayaran berganda bila diedit/ditukar hutang.
-            debts.forEach(d => {
-                if (!Array.isArray(d.payments)) return;
-                const before = d.payments.length;
-                d.payments = d.payments.filter(p => p.txId !== txId);
-                if (d.payments.length !== before) changed = true;
-            });
-
-            // Tambah semula rekod pembayaran jika rekod ditandakan sebagai Hutang Bank Wajib
-            if (txData.isDebtPayment && txData.debtId) {
-                const debt = debts.find(d => String(d.id) === String(txData.debtId));
-                if (debt) {
-                    if (!Array.isArray(debt.payments)) debt.payments = [];
-                    debt.payments.push({ id: Date.now() + Math.floor(Math.random() * 1000), txId, amount: txData.amount, date: txData.date });
-                    changed = true;
-                }
-            }
-
-            if (changed) {
-                saveDebts();
-                if (typeof renderDebtPlan === 'function') renderDebtPlan();
-                if (typeof renderHomeDebtPlanWidget === 'function') renderHomeDebtPlanWidget();
-                if (currentEditDebtId) renderDebtPayments();
-            }
-        }
-
-        function removeDebtPaymentByTxId(txId) {
-            let changed = false;
-            debts.forEach(d => {
-                if (!Array.isArray(d.payments)) return;
-                const before = d.payments.length;
-                d.payments = d.payments.filter(p => p.txId !== txId);
-                if (d.payments.length !== before) changed = true;
-            });
-            if (changed) {
-                saveDebts();
-                if (typeof renderDebtPlan === 'function') renderDebtPlan();
-                if (typeof renderHomeDebtPlanWidget === 'function') renderHomeDebtPlanWidget();
-                if (currentEditDebtId) renderDebtPayments();
-            }
-        }
-
         // --- FORM TOGGLE & CALCULATOR ---
         const toggleBg = document.getElementById('toggle-bg');
-        function populateSavingsAccountSelect() {
-            const sel = document.getElementById('input-savings-account');
-            if (!sel) return;
-            sel.innerHTML = '<option value="">- Pilih akaun simpanan -</option>' +
-                savingsAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
-        }
         function setInputType(type) {
             document.getElementById('input-type').value = type;
-            document.getElementById('btn-expense').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
-            document.getElementById('btn-income').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
-            document.getElementById('btn-savings').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
-            document.getElementById('savings-transfer-wrap').classList.add('hidden');
             if (type === 'expense') {
                 toggleBg.style.transform = 'translateX(0)';
                 document.getElementById('btn-expense').className = "flex-1 py-3 text-sm font-bold text-rose-500 dark:text-rose-400 z-10 transition-colors";
+                document.getElementById('btn-income').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
                 document.getElementById('input-category').innerHTML = customExpenseCategories.map(c => `<option value="${escapeHtmlAttr(c)}">${escapeHtml(c)}</option>`).join('');
-            } else if (type === 'income') {
+            } else {
                 toggleBg.style.transform = 'translateX(100%)';
+                document.getElementById('btn-expense').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
                 document.getElementById('btn-income').className = "flex-1 py-3 text-sm font-bold text-emerald-500 dark:text-emerald-400 z-10 transition-colors";
                 document.getElementById('input-category').innerHTML = customIncomeCategories.map(c => `<option value="${escapeHtmlAttr(c)}">${escapeHtml(c)}</option>`).join('');
-            } else {
-                toggleBg.style.transform = 'translateX(200%)';
-                document.getElementById('btn-savings').className = "flex-1 py-3 text-sm font-bold text-indigo-500 dark:text-indigo-400 z-10 transition-colors";
-                document.getElementById('savings-transfer-wrap').classList.remove('hidden');
-                populateSavingsAccountSelect();
-                if (!document.getElementById('input-text').value) document.getElementById('input-text').value = 'Pindahan ke Simpanan';
             }
-            populateDescriptionSuggestions(type === 'savings' ? 'expense' : type);
+            populateDescriptionSuggestions(type);
         }
         document.getElementById('btn-expense').addEventListener('click', () => setInputType('expense'));
         document.getElementById('btn-income').addEventListener('click', () => setInputType('income'));
-        document.getElementById('btn-savings').addEventListener('click', () => setInputType('savings'));
 
         // Auto-fill Keterangan: cadangkan keterangan yang PERNAH ditaip sebelum ini (ikut jenis Belanja/Pendapatan
         // semasa), supaya pengguna tak perlu keyin semula untuk rekod yang serupa (cth: "Nasi Ayam" berulang kali)
@@ -4035,7 +3769,7 @@
         }
 
         let calcExpr = "0";
-        function toggleCalculator() { document.getElementById('calculator-box').classList.toggle('hidden'); }
+        function toggleCalculator() { const b = document.getElementById('calculator-box'); b.classList.toggle('hidden'); b.classList.toggle('flex'); }
         function calcAppend(val) { calcExpr = (calcExpr === "0" && val !== ".") ? val : calcExpr + val; document.getElementById('calc-display').innerText = calcExpr; }
         function calcClear() { calcExpr = "0"; document.getElementById('calc-display').innerText = calcExpr; }
         function calcDelete() { calcExpr = calcExpr.length > 1 ? calcExpr.slice(0, -1) : "0"; document.getElementById('calc-display').innerText = calcExpr; }
@@ -4050,107 +3784,76 @@
             }
         }
 
-        // --- KITARAN GAJI (Pay Cycle) ---
-        // Sesetengah pengguna terima gaji bukan pada penghujung bulan (cth: 22 atau 23 haribulan).
-        // Untuk sokong ini, "bulan" bajet TIDAK lagi rigid ikut kalendar (1hb - akhir bulan), tapi
-        // ikut hari rekod terkini kategori "Gaji" (Pendapatan). Cth: gaji direkod pada 23hb ->
-        // kitaran semasa ialah 23hb bulan ini hingga 22hb bulan depan, dan berulang begitu.
-        // Jika tiada rekod Gaji langsung, anchorDay lalai = 1 (sama seperti kalendar biasa).
-        function getPayCycleAnchorDay() {
-            const gajiTx = transactions
-                .filter(t => t.type === 'income' && t.category === 'Gaji' && t.date)
-                .sort((a, b) => (a.date < b.date ? 1 : -1)); // terkini dahulu
-            if (gajiTx.length === 0) return 1;
-            const day = parseInt(gajiTx[0].date.split('-')[2], 10);
-            return (day >= 1 && day <= 31) ? day : 1;
-        }
-
-        // Permulaan kitaran bagi sebarang tarikh, ikut anchorDay (dilaraskan jika bulan
-        // berkenaan lebih pendek, cth anchorDay=31 tapi Februari cuma 28/29 hari).
-        function getCycleStartForDate(dateObj, anchorDay) {
-            const y = dateObj.getFullYear(), m = dateObj.getMonth(), d = dateObj.getDate();
-            const dim = new Date(y, m + 1, 0).getDate();
-            const effAnchor = Math.min(anchorDay, dim);
-            if (d >= effAnchor) return new Date(y, m, effAnchor);
-            const prevDim = new Date(y, m, 0).getDate();
-            return new Date(y, m - 1, Math.min(anchorDay, prevDim));
-        }
-
-        function getNextCycleStart(cycleStart, anchorDay) {
-            const y = cycleStart.getFullYear(), m = cycleStart.getMonth();
-            const nextDim = new Date(y, m + 2, 0).getDate();
-            return new Date(y, m + 1, Math.min(anchorDay, nextDim));
-        }
-
-        function getCurrentPayCycle(today) {
-            const anchorDay = getPayCycleAnchorDay();
-            const start = getCycleStartForDate(today, anchorDay);
-            const nextStart = getNextCycleStart(start, anchorDay);
-            const end = new Date(nextStart);
-            end.setDate(end.getDate() - 1);
-            return { anchorDay, start, nextStart, end };
-        }
-
         // --- CORE LOGIC & RENDER ---
-        function calculateFinance() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const todayStr = getLocalYYYYMMDD(today);
+        function getGajiCycleStart(todayStr) {
+            const gajiDates = transactions
+                .filter(t => t.type === 'income' && t.category === 'Gaji' && t.date <= todayStr)
+                .map(t => t.date)
+                .sort();
+            return gajiDates.length ? gajiDates[gajiDates.length - 1] : null;
+        }
 
-            const { anchorDay, start: cycleStart, nextStart, end: cycleEnd } = getCurrentPayCycle(today);
-            const cycleStartStr = getLocalYYYYMMDD(cycleStart);
-            const nextStartStr = getLocalYYYYMMDD(nextStart);
+        function calculateFinance() {
+            const todayStr = getLocalYYYYMMDD();
+            const currentMonthStr = todayStr.substring(0, 7);
+            const gajiStartStr = getGajiCycleStart(todayStr);
 
             let surplus = 0;
             if (appPlan.carryForward) {
-                const pastTx = transactions.filter(t => t.date < cycleStartStr);
-                // Kira bilangan kitaran LEPAS yang unik (bukan bulan kalendar) supaya carry forward
-                // turut ikut kitaran gaji yang sama.
-                const uniquePastCycles = new Set(pastTx.map(t => getLocalYYYYMMDD(getCycleStartForDate(parseLocalDateStr(t.date), anchorDay))));
+                const pastTx = transactions.filter(t => t.date.substring(0, 7) < currentMonthStr);
+                const uniquePastMonths = [...new Set(pastTx.map(t => t.date.substring(0, 7)))];
                 let pInc = 0, pExp = 0;
                 pastTx.forEach(t => t.type === 'income' ? pInc += t.amount : pExp += t.amount);
-                surplus = (uniquePastCycles.size * appPlan.monthlyBudget) + pInc - pExp;
+                const pastBudgetTotal = uniquePastMonths.reduce((s, m) => s + appPlan.monthlyBudget + (budgetTopups[m] || 0), 0);
+                surplus = pastBudgetTotal + pInc - pExp;
                 if(surplus < 0) surplus = 0;
             }
 
+            let periodStartStr, periodEndStr;
+            if (gajiStartStr) {
+                const [gy, gm, gd] = gajiStartStr.split('-').map(Number);
+                const endD = new Date(gy, gm, gd - 1);
+                periodStartStr = gajiStartStr;
+                periodEndStr = endD.getFullYear() + '-' + String(endD.getMonth() + 1).padStart(2, '0') + '-' + String(endD.getDate()).padStart(2, '0');
+            } else {
+                const now0 = new Date();
+                const lastDay = new Date(now0.getFullYear(), now0.getMonth() + 1, 0).getDate();
+                periodStartStr = currentMonthStr + '-01';
+                periodEndStr = currentMonthStr + '-' + String(lastDay).padStart(2, '0');
+            }
+
             let cSpentBf = 0, spentToday = 0, cInc = 0;
-            transactions.filter(t => t.date >= cycleStartStr && t.date < nextStartStr).forEach(t => {
-                // Pindahan ke Simpanan turut ditolak dari dana boleh belanja (sama macam belanja),
-                // BUKAN pendapatan — supaya baki hari ini kurang bila duit dipindah ke Simpanan.
-                if (t.type === 'expense' || t.type === 'savings') { t.date === todayStr ? spentToday += t.amount : cSpentBf += t.amount; }
+            transactions.filter(t => t.date >= periodStartStr && t.date <= periodEndStr).forEach(t => {
+                if (t.type === 'expense') { t.date === todayStr ? spentToday += t.amount : cSpentBf += t.amount; }
                 else { cInc += t.amount; }
             });
 
-            const totalFunds = appPlan.monthlyBudget + surplus + cInc;
-            const daysRem = Math.round((cycleEnd - today) / 86400000) + 1;
+            const currentTopup = budgetTopups[currentMonthStr] || 0;
+            const totalFunds = appPlan.monthlyBudget + currentTopup + surplus + cInc;
+
+            const [ey, em, ed] = periodEndStr.split('-').map(Number);
+            const [ty, tm, td] = todayStr.split('-').map(Number);
+            const endDateObj = new Date(ey, em - 1, ed);
+            const todayDateObj = new Date(ty, tm - 1, td);
+            const daysRem = Math.max(1, Math.round((endDateObj - todayDateObj) / 86400000) + 1);
 
             const remBeforeToday = totalFunds - cSpentBf;
             const limit = remBeforeToday > 0 ? (remBeforeToday / daysRem) : 0;
             const balance = limit - spentToday;
             const currentSpent = cSpentBf + spentToday;
 
-            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem, cycleStart, cycleEnd, anchorDay };
+            return { surplus, totalFunds, currentSpent, remaining: totalFunds - currentSpent, limit, spentToday, balance, daysRem, currentTopup, cycleActive: !!gajiStartStr };
         }
 
         function refreshData() {
             const f = calculateFinance();
-            const billModalEl = document.getElementById('bill-reminder-modal');
-            if (billModalEl && !billModalEl.classList.contains('hidden')) renderBillReminderList();
             document.getElementById('home-daily-limit').innerText = f.limit.toFixed(2);
             document.getElementById('home-spent-today').innerText = f.spentToday.toFixed(2);
             document.getElementById('days-remaining-count').innerText = f.daysRem;
-
+            
             const balEl = document.getElementById('home-today-balance');
             balEl.innerText = (f.balance < 0 ? "-" : "") + Math.abs(f.balance).toFixed(2);
             balEl.className = f.balance < 0 ? "text-rose-300" : "text-white";
-
-            // Papar julat tarikh kitaran gaji semasa (cth: "23 Ogo - 22 Sep") supaya jelas
-            // bila kitaran bajet bermula/tamat, terutama untuk gaji bukan 1hb.
-            const cycleLabel = `${f.cycleStart.toLocaleDateString('ms-MY', { day: '2-digit', month: 'short' })} - ${f.cycleEnd.toLocaleDateString('ms-MY', { day: '2-digit', month: 'short' })}`;
-            const rangeEl = document.getElementById('pay-cycle-range');
-            if (rangeEl) rangeEl.innerText = cycleLabel;
-            const planRangeEl = document.getElementById('plan-cycle-range');
-            if (planRangeEl) planRangeEl.innerText = f.anchorDay === 1 ? `Kitaran: ${cycleLabel} (ikut kalendar)` : `Kitaran Gaji: ${cycleLabel} (anchor ${f.anchorDay}hb)`;
 
             document.getElementById('setting-budget').value = appPlan.monthlyBudget;
             document.getElementById('setting-carry').checked = appPlan.carryForward;
@@ -4158,94 +3861,15 @@
             document.getElementById('plan-spent').innerText = f.currentSpent.toFixed(2);
             document.getElementById('plan-remaining').innerText = f.remaining.toFixed(2);
             document.getElementById('plan-surplus-amt').innerText = f.surplus.toFixed(2);
+            const topupEl = document.getElementById('plan-topup-amt');
+            if (topupEl) topupEl.innerText = f.currentTopup.toFixed(2);
 
-            renderCalendar();
+            renderCalendar(); 
             renderWeeklyTrend();
             renderHomeFeatureWidgets();
             populateHistoryFilters();
-            renderFullHistory();
+            renderFullHistory(); 
             if(document.getElementById('tab-stats').classList.contains('active')) renderStatistics();
-            renderPaydayNotification();
-        }
-
-        // ==========================================================
-        // NOTIFIKASI SEBELUM GAJI (5 hari sebelum tarikh gaji)
-        // Semak: Pelan Pembayaran Hutang (min payment belum cukup), Peringatan Bil Wajib
-        // (bil biasa belum direkod kitaran ini), Sasaran Simpanan (surplus & dari gaji).
-        // Item hilang bila sudah dibayar/direkod (auto) atau ditanda selesai (manual).
-        // ==========================================================
-        function getPaydayDismissedKeys(cycleKey) {
-            const store = JSON.parse(localStorage.getItem('poket_payday_dismissed') || '{}');
-            return new Set(store[cycleKey] || []);
-        }
-        function dismissPaydayItem(cycleKey, itemKey) {
-            const store = JSON.parse(localStorage.getItem('poket_payday_dismissed') || '{}');
-            if (!store[cycleKey]) store[cycleKey] = [];
-            if (!store[cycleKey].includes(itemKey)) store[cycleKey].push(itemKey);
-            localStorage.setItem('poket_payday_dismissed', JSON.stringify(store));
-            renderPaydayNotification();
-        }
-
-        function renderPaydayNotification() {
-            const box = document.getElementById('payday-notification');
-            if (!box) return;
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const { start: cycleStart, nextStart } = getCurrentPayCycle(today);
-            const cycleStartStr = getLocalYYYYMMDD(cycleStart);
-            const nextStartStr = getLocalYYYYMMDD(nextStart);
-            const daysLeft = Math.round((nextStart - today) / 86400000);
-
-            // Hanya tunjuk dalam tempoh 5 hari sebelum gaji (dan bukan lepas tarikh gaji).
-            if (daysLeft > 5 || daysLeft < 0) { box.classList.add('hidden'); return; }
-
-            const cycleKey = nextStartStr;
-            const dismissed = getPaydayDismissedKeys(cycleKey);
-            const items = [];
-
-            // 1) Pelan Pembayaran Hutang — hutang aktif, bayaran minimum belum cukup kitaran ini
-            (typeof getActiveDebts === 'function' ? getActiveDebts() : []).forEach(d => {
-                const key = `debt-${d.id}`;
-                if (dismissed.has(key)) return;
-                const min = getDebtMin(d);
-                if (min <= 0) return;
-                const paid = getDebtPayments(d).filter(p => p.date >= cycleStartStr && p.date < nextStartStr)
-                    .reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-                if (paid < min - 0.005) {
-                    items.push({ key, icon: 'fa-landmark', text: `Hutang "${escapeHtml(d.name)}" — bayar minimum RM ${min.toFixed(2)}` });
-                }
-            });
-
-            // 2) Peringatan Bil Wajib — bil (nama) yang pernah direkod isBill tapi belum direkod kitaran ini
-            const knownBillNames = [...new Set(transactions.filter(t => t.isBill).map(t => (t.text || '').trim().toLowerCase()).filter(Boolean))];
-            const recordedThisCycle = new Set(transactions.filter(t => t.isBill && t.date >= cycleStartStr && t.date < nextStartStr).map(t => (t.text || '').trim().toLowerCase()));
-            const missingBills = knownBillNames.filter(n => !recordedThisCycle.has(n));
-            if (missingBills.length > 0 && !dismissed.has('bills')) {
-                items.push({ key: 'bills', icon: 'fa-file-invoice-dollar', text: `${missingBills.length} Bil Bulanan Wajib belum direkod kitaran ini` });
-            }
-
-            // 3) Sasaran Simpanan — dari surplus & dari gaji (tiada auto-detect, boleh tanda selesai)
-            const savingsGoalEl = document.getElementById('savings-goal-amount');
-            const savingsGoalAmt = savingsGoalEl ? parseFloat(savingsGoalEl.innerText) || 0 : 0;
-            if (savingsGoalAmt > 0 && !dismissed.has('savings-surplus')) {
-                items.push({ key: 'savings-surplus', icon: 'fa-piggy-bank', text: `Sasaran Simpanan dari surplus — RM ${savingsGoalAmt.toFixed(2)}` });
-            }
-            const salarySavingsEl = document.getElementById('salary-savings-amount');
-            const salarySavingsAmt = salarySavingsEl ? parseFloat(salarySavingsEl.innerText) || 0 : 0;
-            if (salarySavingsAmt > 0 && !dismissed.has('savings-gaji')) {
-                items.push({ key: 'savings-gaji', icon: 'fa-sack-dollar', text: `Simpanan Dari Gaji — RM ${salarySavingsAmt.toFixed(2)}` });
-            }
-
-            if (items.length === 0) { box.classList.add('hidden'); return; }
-
-            box.classList.remove('hidden');
-            document.getElementById('payday-days-left').innerText = daysLeft;
-            document.getElementById('payday-notification-list').innerHTML = items.map(it => `
-                <li class="flex items-center justify-between bg-white/10 rounded-xl px-3 py-2">
-                    <span class="text-[10px] text-amber-50 flex items-center gap-1.5 min-w-0"><i class="fas ${it.icon} text-[9px] flex-shrink-0"></i><span class="truncate">${it.text}</span></span>
-                    <button type="button" onclick="dismissPaydayItem('${cycleKey}','${it.key}')" title="Tandakan selesai" class="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center flex-shrink-0 ml-2"><i class="fas fa-check text-[9px]"></i></button>
-                </li>`).join('');
         }
 
         document.getElementById('form-add').addEventListener('submit', (e) => {
@@ -4253,92 +3877,37 @@
             const amt = parseFloat(document.getElementById('input-amount').value);
             if (isNaN(amt) || amt <= 0) return alert('Sila masukkan jumlah sah.');
             
-            const typeVal = document.getElementById('input-type').value;
-            const isExpense = typeVal === 'expense';
-            const isSavings = typeVal === 'savings';
-            const isDebtChecked = isExpense && document.getElementById('input-is-debt').checked;
-            const debtSelectVal = document.getElementById('input-debt-select').value;
-            if (isDebtChecked && !debtSelectVal) { alert('Sila pilih hutang yang berkaitan untuk rekod Hutang Bank Wajib ini.'); return; }
-
-            const savingsAccountVal = document.getElementById('input-savings-account') ? document.getElementById('input-savings-account').value : '';
-            if (isSavings && !savingsAccountVal) { alert('Sila pilih akaun simpanan untuk pindahan ini.'); return; }
-
             const txData = {
                 date: document.getElementById('input-date').value,
-                category: isSavings ? 'Simpanan' : document.getElementById('input-category').value,
+                category: document.getElementById('input-category').value,
                 text: document.getElementById('input-text').value,
                 amount: amt,
-                type: typeVal,
-                isBill: isExpense && document.getElementById('input-is-bill').checked,
-                isDebtPayment: isDebtChecked && !!debtSelectVal,
-                debtId: isDebtChecked && debtSelectVal ? debtSelectVal : null,
-                savingsAccountId: isSavings ? savingsAccountVal : null
-            };
-            // Jika bil ini pernah "dibuang" dari peringatan tapi kini direkod semula, aktifkan semula peringatannya.
-            if (txData.isBill && txData.text) {
-                const beforeLen = dismissedBillNames.length;
-                dismissedBillNames = dismissedBillNames.filter(n => n.toLowerCase() !== txData.text.trim().toLowerCase());
-                if (dismissedBillNames.length !== beforeLen) saveDismissedBillNames();
+                type: document.getElementById('input-type').value,
+                isBill: document.getElementById('input-type').value === 'expense' && document.getElementById('input-is-bill').checked
             };
 
-            let txId;
-            const oldTx = currentEditId ? transactions.find(t => t.id === currentEditId) : null;
             if (currentEditId) {
                 const index = transactions.findIndex(t => t.id === currentEditId);
                 if(index !== -1) transactions[index] = { ...transactions[index], ...txData };
-                txId = currentEditId;
-                currentEditId = null;
+                currentEditId = null; 
             } else {
-                txId = Date.now();
-                transactions.push({ id: txId, ...txData });
+                transactions.push({ id: Date.now(), ...txData });
             }
 
             localStorage.setItem('poket_tx', JSON.stringify(transactions));
-            selectedCalendarDateStr = txData.date;
-
-            // Cross-check & auto-update ke Pelan Pembayaran Hutang
-            syncDebtPaymentFromTx(txId, txData);
-            // Transfer terus ke Akaun Simpanan yang dipilih (& urus semula jika rekod diedit)
-            syncSavingsTransferFromTx(oldTx, txData);
-
+            selectedCalendarDateStr = txData.date; 
+            
             document.getElementById('input-text').value = '';
             document.getElementById('input-amount').value = '';
-            document.getElementById('input-is-debt').checked = false;
-            toggleDebtLinkSelect();
             calcClear();
             closeAddModal();
             refreshData();
-            showBudgetToast();
         });
-
-        // Transfer/laraskan baki Akaun Simpanan bila rekod jenis "Simpan" ditambah/diedit.
-        // oldTx = rekod sebelum diedit (untuk balikkan sumbangan lama supaya tidak berganda).
-        function syncSavingsTransferFromTx(oldTx, newTxData) {
-            let changed = false;
-            if (oldTx && oldTx.type === 'savings' && oldTx.savingsAccountId) {
-                const oldAcc = savingsAccounts.find(a => String(a.id) === String(oldTx.savingsAccountId));
-                if (oldAcc) { oldAcc.amount = Math.max(0, (parseFloat(oldAcc.amount) || 0) - (parseFloat(oldTx.amount) || 0)); changed = true; }
-            }
-            if (newTxData.type === 'savings' && newTxData.savingsAccountId) {
-                const newAcc = savingsAccounts.find(a => String(a.id) === String(newTxData.savingsAccountId));
-                if (newAcc) { newAcc.amount = (parseFloat(newAcc.amount) || 0) + (parseFloat(newTxData.amount) || 0); changed = true; }
-            }
-            if (changed) {
-                saveSavingsAccounts();
-                if (typeof renderSavingsAccounts === 'function') renderSavingsAccounts();
-                if (typeof renderHomeSavingsGoalWidget === 'function') renderHomeSavingsGoalWidget();
-            }
-        }
 
         function deleteTx(id) {
             if(confirm('Padam rekod ini?')) {
-                const tx = transactions.find(t => t.id === id);
                 transactions = transactions.filter(t => t.id !== id);
                 localStorage.setItem('poket_tx', JSON.stringify(transactions));
-                // Buang juga rekod pembayaran hutang / pindahan simpanan yang dipautkan (jika ada)
-                // supaya Pelan Pembayaran Hutang & Akaun Simpanan kekal tepat.
-                removeDebtPaymentByTxId(id);
-                if (tx) syncSavingsTransferFromTx(tx, { type: 'none' });
                 refreshData();
             }
         }
@@ -4572,38 +4141,6 @@
             localStorage.setItem('poket_plan', JSON.stringify(appPlan));
             alert('Tetapan berjaya disimpan!');
             refreshData();
-            showBudgetToast();
-        }
-
-        // --- Notifikasi Status Bajet: "RM digunakan/RM jumlah; RM baki" ---
-        let budgetToastTimer = null;
-        function showBudgetToast() {
-            const el = document.getElementById('budget-toast');
-            if (!el) return;
-            const f = calculateFinance();
-            el.innerText = `Bajet: RM ${f.currentSpent.toFixed(2)}/RM ${f.totalFunds.toFixed(2)}; RM ${f.remaining.toFixed(2)} baki`;
-            el.classList.remove('opacity-0', '-translate-y-3', 'pointer-events-none');
-
-            clearTimeout(budgetToastTimer);
-            budgetToastTimer = setTimeout(() => {
-                el.classList.add('opacity-0', '-translate-y-3', 'pointer-events-none');
-            }, 3200);
-        }
-
-        // Tambah (top-up) jumlah terus ke Bajet Bulanan semasa, supaya "Status Bulan Ini >
-        // Total Dana Semasa" terus bertambah tanpa perlu timpa/reset nilai bajet sedia ada.
-        function addToMonthlyBudget() {
-            const val = prompt('Masukkan jumlah (RM) untuk ditambah ke Bajet Bulanan / Total Dana Semasa:');
-            if (val === null) return;
-            const amt = parseFloat(val);
-            if (isNaN(amt) || amt <= 0) { alert('Sila masukkan jumlah yang sah.'); return; }
-
-            appPlan.monthlyBudget = (parseFloat(appPlan.monthlyBudget) || 0) + amt;
-            localStorage.setItem('poket_plan', JSON.stringify(appPlan));
-            document.getElementById('setting-budget').value = appPlan.monthlyBudget;
-            refreshData();
-            showBudgetToast();
-            alert(`RM ${amt.toFixed(2)} berjaya ditambah. Bajet Bulanan kini RM ${appPlan.monthlyBudget.toFixed(2)}.`);
         }
 
         // ==========================================================
