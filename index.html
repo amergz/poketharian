@@ -736,8 +736,16 @@
 
                     <label class="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 cursor-pointer">
                         <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300"><i class="fas fa-bell text-amber-400 mr-1"></i>Tandakan sebagai Bil Bulanan Wajib</span>
-                        <input type="checkbox" id="input-is-bill" class="w-5 h-5 accent-amber-500">
+                        <input type="checkbox" id="input-is-bill" class="w-5 h-5 accent-amber-500" onchange="toggleBillLinkSelect()">
                     </label>
+
+                    <div id="bill-link-wrap" class="hidden bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Pilih Bil Bulanan Wajib</label>
+                        <select id="input-bill-select" onchange="applyBillSelectChoice()" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none text-sm font-medium">
+                            <option value="">- Bil baharu (taip nama di Keterangan) -</option>
+                        </select>
+                        <p class="text-[9px] text-slate-400 px-2 pb-1">Pilih bil sedia ada supaya nama sepadan (cross-check) dengan Peringatan Bil Wajib, atau biarkan "Bil baharu" untuk bil pertama kali.</p>
+                    </div>
 
                     <label class="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 cursor-pointer">
                         <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300"><i class="fas fa-landmark text-rose-400 mr-1"></i>Tandakan sebagai Hutang Bank Wajib</span>
@@ -3806,6 +3814,8 @@
             document.getElementById('input-amount').value = '';
             calcClear();
             setInputType('expense');
+            document.getElementById('input-is-bill').checked = false;
+            toggleBillLinkSelect();
             populateDebtLinkSelect();
             document.getElementById('input-is-debt').checked = false;
             toggleDebtLinkSelect();
@@ -3826,6 +3836,7 @@
 
             document.getElementById('input-text').value = tx.text;
             document.getElementById('input-is-bill').checked = !!tx.isBill;
+            toggleBillLinkSelect();
             populateDebtLinkSelect();
             document.getElementById('input-is-debt').checked = !!tx.isDebtPayment;
             toggleDebtLinkSelect();
@@ -3840,6 +3851,44 @@
             document.getElementById('modal-title').innerText = "Kemaskini Rekod";
             document.getElementById('btn-submit-tx').innerText = "KEMASKINI REKOD";
             openAddModal();
+        }
+
+        // --- Bil Bulanan Wajib: pilih dari senarai bil sedia ada supaya nama sepadan (cross-check)
+        // dengan Peringatan Bil Wajib (yang padankan ikut teks Keterangan, huruf kecil/besar diabaikan).
+        function getKnownBillNames() {
+            const names = new Set();
+            transactions.forEach(t => { if (t.type === 'expense' && t.isBill && t.text) names.add(t.text.trim()); });
+            return [...names].sort((a, b) => a.localeCompare(b));
+        }
+
+        function toggleBillLinkSelect() {
+            const cb = document.getElementById('input-is-bill');
+            const wrap = document.getElementById('bill-link-wrap');
+            if (!cb || !wrap) return;
+            wrap.classList.toggle('hidden', !cb.checked);
+            if (cb.checked) populateBillSelect();
+        }
+
+        function populateBillSelect() {
+            const sel = document.getElementById('input-bill-select');
+            if (!sel) return;
+            const names = getKnownBillNames();
+            sel.innerHTML = '<option value="">- Bil baharu (taip nama di Keterangan) -</option>' +
+                names.map(n => `<option value="${escapeHtmlAttr(n)}">${escapeHtml(n)}</option>`).join('');
+
+            // Jika Keterangan semasa dah sepadan dengan salah satu bil sedia ada (cth: sedang edit
+            // rekod lama), pra-pilih terus supaya jelas ia dipautkan dengan bil yang sama.
+            const currentText = (document.getElementById('input-text').value || '').trim();
+            if (currentText && names.some(n => n.toLowerCase() === currentText.toLowerCase())) {
+                sel.value = names.find(n => n.toLowerCase() === currentText.toLowerCase());
+            }
+        }
+
+        // Bila pilih bil sedia ada dari dropdown, auto-isi Keterangan dengan nama SAMA PERSIS
+        // (case-sensitive) supaya padanan dengan Peringatan Bil Wajib tepat 100%.
+        function applyBillSelectChoice() {
+            const sel = document.getElementById('input-bill-select');
+            if (sel && sel.value) document.getElementById('input-text').value = sel.value;
         }
 
         // --- Hutang Bank Wajib: pautkan rekod transaksi terus ke Pelan Pembayaran Hutang ---
