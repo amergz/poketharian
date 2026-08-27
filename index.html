@@ -1514,6 +1514,8 @@
         }
 
         let transactions = JSON.parse(localStorage.getItem('poket_tx')) || [];
+        let dismissedBillNames = JSON.parse(localStorage.getItem('poket_dismissed_bills')) || [];
+        function saveDismissedBillNames() { localStorage.setItem('poket_dismissed_bills', JSON.stringify(dismissedBillNames)); }
         let appPlan = JSON.parse(localStorage.getItem('poket_plan')) || { monthlyBudget: 0, carryForward: true };
         let currentTheme = localStorage.getItem('poket_theme') || 'light';
         
@@ -2291,7 +2293,23 @@
                     if (d < cutoff) names.add(t.text.trim());
                 }
             });
-            return [...names];
+            return [...names].filter(n => !dismissedBillNames.some(dn => dn.toLowerCase() === n.toLowerCase()));
+        }
+        function dismissBillReminder(name) {
+            if (!confirm(`Buang peringatan untuk "${name}"? Ia tidak akan dipaparkan lagi sehingga anda rekod semula bil ini.`)) return;
+            if (!dismissedBillNames.some(dn => dn.toLowerCase() === name.toLowerCase())) {
+                dismissedBillNames.push(name);
+                saveDismissedBillNames();
+            }
+            renderBillReminderList();
+        }
+        function editBillTxFromReminder(id) {
+            closeBillReminderModal();
+            editTx(id);
+        }
+        function deleteBillTxFromReminder(id) {
+            deleteTx(id);
+            renderBillReminderList();
         }
 
         function renderBillReminderList() {
@@ -2316,22 +2334,27 @@
             }
 
             const paidHtml = bills.map(t => `
-                <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 shadow-sleek">
-                    <div class="min-w-0">
+                <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2.5 shadow-sleek gap-2">
+                    <div class="min-w-0 flex-1">
                         <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(t.text)}</p>
                         <p class="text-[9px] text-slate-400">${escapeHtml(t.category)} • ${t.date}</p>
                     </div>
                     <span class="text-[11px] font-bold text-amber-500 flex-shrink-0">RM ${t.amount.toFixed(2)}</span>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <button type="button" onclick="editBillTxFromReminder(${t.id})" class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center"><i class="fas fa-pen text-[9px]"></i></button>
+                        <button type="button" onclick="deleteBillTxFromReminder(${t.id})" class="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center"><i class="fas fa-trash text-[9px]"></i></button>
+                    </div>
                 </li>`).join('');
 
             // Peringatan bil belum direkod bulan ini — SENGAJA tiada jumlah RM dipaparkan.
             const pendingHtml = pendingReminders.map(name => `
-                <li class="flex items-center justify-between bg-amber-50 dark:bg-amber-500/10 border border-dashed border-amber-300 dark:border-amber-500/30 rounded-xl px-3 py-2.5">
-                    <div class="min-w-0">
+                <li class="flex items-center justify-between bg-amber-50 dark:bg-amber-500/10 border border-dashed border-amber-300 dark:border-amber-500/30 rounded-xl px-3 py-2.5 gap-2">
+                    <div class="min-w-0 flex-1">
                         <p class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate">${escapeHtml(name)}</p>
                         <p class="text-[9px] text-amber-500 font-semibold">Peringatan • belum direkod bulan ini</p>
                     </div>
                     <i class="fas fa-bell text-amber-400 text-[11px] flex-shrink-0"></i>
+                    <button type="button" onclick="dismissBillReminder('${name.replace(/'/g, "\\'")}')" class="w-6 h-6 rounded-lg bg-white/70 dark:bg-slate-800 text-amber-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-times text-[10px]"></i></button>
                 </li>`).join('');
 
             listEl.innerHTML = paidHtml + pendingHtml;
@@ -4111,6 +4134,8 @@
 
         function refreshData() {
             const f = calculateFinance();
+            const billModalEl = document.getElementById('bill-reminder-modal');
+            if (billModalEl && !billModalEl.classList.contains('hidden')) renderBillReminderList();
             document.getElementById('home-daily-limit').innerText = f.limit.toFixed(2);
             document.getElementById('home-spent-today').innerText = f.spentToday.toFixed(2);
             document.getElementById('days-remaining-count').innerText = f.daysRem;
@@ -4248,6 +4273,12 @@
                 isDebtPayment: isDebtChecked && !!debtSelectVal,
                 debtId: isDebtChecked && debtSelectVal ? debtSelectVal : null,
                 savingsAccountId: isSavings ? savingsAccountVal : null
+            };
+            // Jika bil ini pernah "dibuang" dari peringatan tapi kini direkod semula, aktifkan semula peringatannya.
+            if (txData.isBill && txData.text) {
+                const beforeLen = dismissedBillNames.length;
+                dismissedBillNames = dismissedBillNames.filter(n => n.toLowerCase() !== txData.text.trim().toLowerCase());
+                if (dismissedBillNames.length !== beforeLen) saveDismissedBillNames();
             };
 
             let txId;
