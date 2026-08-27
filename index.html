@@ -655,11 +655,20 @@
 
                 <form id="form-add" class="space-y-4">
                     <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl relative">
-                        <div id="toggle-bg" class="absolute w-1/2 h-full bg-white dark:bg-slate-700 rounded-xl shadow-sm transition-transform duration-300 left-0 top-0"></div>
+                        <div id="toggle-bg" class="absolute w-1/3 h-full bg-white dark:bg-slate-700 rounded-xl shadow-sm transition-transform duration-300 left-0 top-0"></div>
                         <button type="button" id="btn-expense" class="flex-1 py-3 text-sm font-bold text-rose-500 dark:text-rose-400 z-10 transition-colors">Belanja</button>
                         <button type="button" id="btn-income" class="flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors">Pendapatan</button>
+                        <button type="button" id="btn-savings" class="flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors">Simpan</button>
                     </div>
                     <input type="hidden" id="input-type" value="expense">
+
+                    <div id="savings-transfer-wrap" class="hidden bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
+                        <label class="text-[10px] uppercase font-bold text-slate-400 px-2 block">Pindah Ke Akaun Simpanan</label>
+                        <select id="input-savings-account" class="w-full px-2 py-1 bg-transparent text-slate-700 dark:text-white outline-none text-sm font-medium">
+                            <option value="">- Pilih akaun simpanan -</option>
+                        </select>
+                        <p class="text-[9px] text-slate-400 px-2 pb-1">Jumlah di bawah akan dipindahkan terus ke akaun simpanan yang dipilih.</p>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-2 border border-slate-100 dark:border-slate-800">
@@ -3821,6 +3830,9 @@
             document.getElementById('input-is-debt').checked = !!tx.isDebtPayment;
             toggleDebtLinkSelect();
             if (tx.isDebtPayment && tx.debtId) document.getElementById('input-debt-select').value = tx.debtId;
+            if (tx.type === 'savings' && tx.savingsAccountId && document.getElementById('input-savings-account')) {
+                document.getElementById('input-savings-account').value = tx.savingsAccountId;
+            }
             document.getElementById('input-amount').value = tx.amount.toFixed(2);
             calcExpr = tx.amount.toString();
             document.getElementById('calc-display').innerText = calcExpr;
@@ -3898,23 +3910,38 @@
 
         // --- FORM TOGGLE & CALCULATOR ---
         const toggleBg = document.getElementById('toggle-bg');
+        function populateSavingsAccountSelect() {
+            const sel = document.getElementById('input-savings-account');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">- Pilih akaun simpanan -</option>' +
+                savingsAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+        }
         function setInputType(type) {
             document.getElementById('input-type').value = type;
+            document.getElementById('btn-expense').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
+            document.getElementById('btn-income').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
+            document.getElementById('btn-savings').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
+            document.getElementById('savings-transfer-wrap').classList.add('hidden');
             if (type === 'expense') {
                 toggleBg.style.transform = 'translateX(0)';
                 document.getElementById('btn-expense').className = "flex-1 py-3 text-sm font-bold text-rose-500 dark:text-rose-400 z-10 transition-colors";
-                document.getElementById('btn-income').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
                 document.getElementById('input-category').innerHTML = customExpenseCategories.map(c => `<option value="${escapeHtmlAttr(c)}">${escapeHtml(c)}</option>`).join('');
-            } else {
+            } else if (type === 'income') {
                 toggleBg.style.transform = 'translateX(100%)';
-                document.getElementById('btn-expense').className = "flex-1 py-3 text-sm font-medium text-slate-400 z-10 transition-colors";
                 document.getElementById('btn-income').className = "flex-1 py-3 text-sm font-bold text-emerald-500 dark:text-emerald-400 z-10 transition-colors";
                 document.getElementById('input-category').innerHTML = customIncomeCategories.map(c => `<option value="${escapeHtmlAttr(c)}">${escapeHtml(c)}</option>`).join('');
+            } else {
+                toggleBg.style.transform = 'translateX(200%)';
+                document.getElementById('btn-savings').className = "flex-1 py-3 text-sm font-bold text-indigo-500 dark:text-indigo-400 z-10 transition-colors";
+                document.getElementById('savings-transfer-wrap').classList.remove('hidden');
+                populateSavingsAccountSelect();
+                if (!document.getElementById('input-text').value) document.getElementById('input-text').value = 'Pindahan ke Simpanan';
             }
-            populateDescriptionSuggestions(type);
+            populateDescriptionSuggestions(type === 'savings' ? 'expense' : type);
         }
         document.getElementById('btn-expense').addEventListener('click', () => setInputType('expense'));
         document.getElementById('btn-income').addEventListener('click', () => setInputType('income'));
+        document.getElementById('btn-savings').addEventListener('click', () => setInputType('savings'));
 
         // Auto-fill Keterangan: cadangkan keterangan yang PERNAH ditaip sebelum ini (ikut jenis Belanja/Pendapatan
         // semasa), supaya pengguna tak perlu keyin semula untuk rekod yang serupa (cth: "Nasi Ayam" berulang kali)
@@ -4016,7 +4043,9 @@
 
             let cSpentBf = 0, spentToday = 0, cInc = 0;
             transactions.filter(t => t.date >= cycleStartStr && t.date < nextStartStr).forEach(t => {
-                if (t.type === 'expense') { t.date === todayStr ? spentToday += t.amount : cSpentBf += t.amount; }
+                // Pindahan ke Simpanan turut ditolak dari dana boleh belanja (sama macam belanja),
+                // BUKAN pendapatan — supaya baki hari ini kurang bila duit dipindah ke Simpanan.
+                if (t.type === 'expense' || t.type === 'savings') { t.date === todayStr ? spentToday += t.amount : cSpentBf += t.amount; }
                 else { cInc += t.amount; }
             });
 
@@ -4150,23 +4179,30 @@
             const amt = parseFloat(document.getElementById('input-amount').value);
             if (isNaN(amt) || amt <= 0) return alert('Sila masukkan jumlah sah.');
             
-            const isExpense = document.getElementById('input-type').value === 'expense';
+            const typeVal = document.getElementById('input-type').value;
+            const isExpense = typeVal === 'expense';
+            const isSavings = typeVal === 'savings';
             const isDebtChecked = isExpense && document.getElementById('input-is-debt').checked;
             const debtSelectVal = document.getElementById('input-debt-select').value;
             if (isDebtChecked && !debtSelectVal) { alert('Sila pilih hutang yang berkaitan untuk rekod Hutang Bank Wajib ini.'); return; }
 
+            const savingsAccountVal = document.getElementById('input-savings-account') ? document.getElementById('input-savings-account').value : '';
+            if (isSavings && !savingsAccountVal) { alert('Sila pilih akaun simpanan untuk pindahan ini.'); return; }
+
             const txData = {
                 date: document.getElementById('input-date').value,
-                category: document.getElementById('input-category').value,
+                category: isSavings ? 'Simpanan' : document.getElementById('input-category').value,
                 text: document.getElementById('input-text').value,
                 amount: amt,
-                type: document.getElementById('input-type').value,
+                type: typeVal,
                 isBill: isExpense && document.getElementById('input-is-bill').checked,
                 isDebtPayment: isDebtChecked && !!debtSelectVal,
-                debtId: isDebtChecked && debtSelectVal ? debtSelectVal : null
+                debtId: isDebtChecked && debtSelectVal ? debtSelectVal : null,
+                savingsAccountId: isSavings ? savingsAccountVal : null
             };
 
             let txId;
+            const oldTx = currentEditId ? transactions.find(t => t.id === currentEditId) : null;
             if (currentEditId) {
                 const index = transactions.findIndex(t => t.id === currentEditId);
                 if(index !== -1) transactions[index] = { ...transactions[index], ...txData };
@@ -4182,6 +4218,8 @@
 
             // Cross-check & auto-update ke Pelan Pembayaran Hutang
             syncDebtPaymentFromTx(txId, txData);
+            // Transfer terus ke Akaun Simpanan yang dipilih (& urus semula jika rekod diedit)
+            syncSavingsTransferFromTx(oldTx, txData);
 
             document.getElementById('input-text').value = '';
             document.getElementById('input-amount').value = '';
@@ -4193,13 +4231,34 @@
             showBudgetToast();
         });
 
+        // Transfer/laraskan baki Akaun Simpanan bila rekod jenis "Simpan" ditambah/diedit.
+        // oldTx = rekod sebelum diedit (untuk balikkan sumbangan lama supaya tidak berganda).
+        function syncSavingsTransferFromTx(oldTx, newTxData) {
+            let changed = false;
+            if (oldTx && oldTx.type === 'savings' && oldTx.savingsAccountId) {
+                const oldAcc = savingsAccounts.find(a => String(a.id) === String(oldTx.savingsAccountId));
+                if (oldAcc) { oldAcc.amount = Math.max(0, (parseFloat(oldAcc.amount) || 0) - (parseFloat(oldTx.amount) || 0)); changed = true; }
+            }
+            if (newTxData.type === 'savings' && newTxData.savingsAccountId) {
+                const newAcc = savingsAccounts.find(a => String(a.id) === String(newTxData.savingsAccountId));
+                if (newAcc) { newAcc.amount = (parseFloat(newAcc.amount) || 0) + (parseFloat(newTxData.amount) || 0); changed = true; }
+            }
+            if (changed) {
+                saveSavingsAccounts();
+                if (typeof renderSavingsAccounts === 'function') renderSavingsAccounts();
+                if (typeof renderHomeSavingsGoalWidget === 'function') renderHomeSavingsGoalWidget();
+            }
+        }
+
         function deleteTx(id) {
             if(confirm('Padam rekod ini?')) {
+                const tx = transactions.find(t => t.id === id);
                 transactions = transactions.filter(t => t.id !== id);
                 localStorage.setItem('poket_tx', JSON.stringify(transactions));
-                // Buang juga rekod pembayaran hutang yang dipautkan (jika ada) supaya
-                // Pelan Pembayaran Hutang kekal tepat.
+                // Buang juga rekod pembayaran hutang / pindahan simpanan yang dipautkan (jika ada)
+                // supaya Pelan Pembayaran Hutang & Akaun Simpanan kekal tepat.
                 removeDebtPaymentByTxId(id);
+                if (tx) syncSavingsTransferFromTx(tx, { type: 'none' });
                 refreshData();
             }
         }
