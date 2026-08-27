@@ -394,9 +394,20 @@
                     </div>
                 </div>
 
-                <div class="flex bg-slate-200/50 dark:bg-slate-800 p-1.5 rounded-2xl mb-6">
+                <div class="flex bg-slate-200/50 dark:bg-slate-800 p-1.5 rounded-2xl mb-4">
                     <button onclick="setStatFilter('monthly')" id="stat-monthly" class="flex-1 py-2.5 rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 font-bold shadow-sm text-xs transition-all">Bulan Ini</button>
                     <button onclick="setStatFilter('yearly')" id="stat-yearly" class="flex-1 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium text-xs transition-all">Tahun Ini</button>
+                </div>
+
+                <!-- Navigasi sejarah — semak balik statistik bulan/tahun sebelumnya -->
+                <div class="flex items-center justify-between mb-6">
+                    <button type="button" onclick="shiftStatPeriod(-1)" class="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sleek text-slate-500 dark:text-slate-300 flex items-center justify-center active:scale-90 transition">
+                        <i class="fas fa-chevron-left text-[11px]"></i>
+                    </button>
+                    <button type="button" onclick="jumpStatToCurrent()" id="stat-period-label" class="text-xs font-extrabold text-slate-700 dark:text-slate-200 px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow-sleek"></button>
+                    <button type="button" onclick="shiftStatPeriod(1)" id="stat-next-btn" class="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sleek text-slate-500 dark:text-slate-300 flex items-center justify-center active:scale-90 transition">
+                        <i class="fas fa-chevron-right text-[11px]"></i>
+                    </button>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-6">
@@ -5019,10 +5030,26 @@
         }
 
         // --- STATS & CHARTS ---
+        // Tarikh tempoh yang sedang dilihat dalam Statistik — boleh dinavigasi ke bulan/tahun
+        // sebelumnya guna shiftStatPeriod(), berasingan drpd tarikh "hari ini" sebenar.
+        let statViewDate = new Date();
         function setStatFilter(type) {
             statFilter = type;
+            statViewDate = new Date(); // tukar jenis paparan (Bulan/Tahun) mula semula dari tempoh semasa
             document.getElementById('stat-monthly').className = type === 'monthly' ? "flex-1 py-2.5 rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 font-bold shadow-sm text-xs transition-all" : "flex-1 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium text-xs transition-all";
             document.getElementById('stat-yearly').className = type === 'yearly' ? "flex-1 py-2.5 rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 font-bold shadow-sm text-xs transition-all" : "flex-1 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium text-xs transition-all";
+            renderStatistics();
+        }
+        function shiftStatPeriod(dir) {
+            if (statFilter === 'monthly') {
+                statViewDate = new Date(statViewDate.getFullYear(), statViewDate.getMonth() + dir, 1);
+            } else {
+                statViewDate = new Date(statViewDate.getFullYear() + dir, statViewDate.getMonth(), 1);
+            }
+            renderStatistics();
+        }
+        function jumpStatToCurrent() {
+            statViewDate = new Date();
             renderStatistics();
         }
 
@@ -5161,7 +5188,20 @@
 
         function renderStatistics() {
             if (typeof renderBillStatsCard === 'function') renderBillStatsCard();
-            const filterStr = statFilter === 'monthly' ? getLocalYYYYMMDD().substring(0,7) : getLocalYYYYMMDD().substring(0,4);
+            const vy = statViewDate.getFullYear(), vm = statViewDate.getMonth();
+            const filterStr = statFilter === 'monthly' ? `${vy}-${String(vm + 1).padStart(2, '0')}` : `${vy}`;
+
+            // Kemaskini label tempoh & sekat butang "seterusnya" supaya tak boleh lihat masa depan
+            const periodLabelEl = document.getElementById('stat-period-label');
+            if (periodLabelEl) periodLabelEl.innerText = statFilter === 'monthly' ? `${monthNames[vm]} ${vy}` : `${vy}`;
+            const nextBtn = document.getElementById('stat-next-btn');
+            if (nextBtn) {
+                const now = new Date();
+                const isCurrent = statFilter === 'monthly' ? (vy === now.getFullYear() && vm === now.getMonth()) : (vy === now.getFullYear());
+                nextBtn.classList.toggle('opacity-30', isCurrent);
+                nextBtn.classList.toggle('pointer-events-none', isCurrent);
+            }
+
             let tInc = 0, tExp = 0, expCat = {}, incCat = {};
             let expTxList = [], incTxList = [];
 
