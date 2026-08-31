@@ -4332,7 +4332,10 @@
             calcClear();
             closeAddModal();
             refreshData();
-            showBudgetToast();
+            // Delaykan paparan notifikasi bajet 8 saat selepas transaksi direkod, supaya
+            // tidak bertindih dgn animasi tutup modal & lebih mudah disedari pengguna.
+            clearTimeout(budgetToastDelayTimer);
+            budgetToastDelayTimer = setTimeout(showBudgetToast, 8000);
         });
 
         // Transfer/laraskan baki Akaun Simpanan bila rekod jenis "Simpan" ditambah/diedit.
@@ -4601,6 +4604,7 @@
 
         // --- Notifikasi Status Bajet: "RM digunakan/RM jumlah; RM baki" ---
         let budgetToastTimer = null;
+        let budgetToastDelayTimer = null; // delay sebelum notifikasi dipaparkan selepas transaksi direkod
         function showBudgetToast() {
             const el = document.getElementById('budget-toast');
             if (!el) return;
