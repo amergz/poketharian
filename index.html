@@ -1238,6 +1238,20 @@
                         <canvas id="forecastTrendChart"></canvas>
                     </div>
                 </div>
+
+                <!-- Graf linear per kategori — trend SETIAP perbelanjaan setiap bulan, boleh expand/hide -->
+                <button type="button" onclick="toggleForecastCategoryTrend()" class="w-full flex items-center justify-between mt-4 mb-3">
+                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Trend Ikut Kategori (Setiap Bulan)</h4>
+                    <span id="forecast-cat-trend-toggle-label" class="text-[10px] font-bold text-violet-600 dark:text-violet-400 flex items-center gap-1 flex-shrink-0">
+                        Expand <i id="forecast-cat-trend-toggle-icon" class="fas fa-chevron-down text-[9px] transition-transform duration-200"></i>
+                    </span>
+                </button>
+                <div id="forecast-category-trend-wrap" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sleek">
+                    <div class="relative h-52 w-full">
+                        <canvas id="forecastCategoryTrendChart"></canvas>
+                    </div>
+                    <div id="forecast-category-trend-legend" class="flex flex-wrap gap-x-3 gap-y-1.5 mt-3"></div>
+                </div>
             </div>
         </div>
 
@@ -2340,14 +2354,18 @@
             const y = billViewDate.getFullYear(), m = billViewDate.getMonth();
             const labelEl = document.getElementById('bill-reminder-month-label');
             if (labelEl) labelEl.innerText = `${monthNames[m]} ${y}`;
-            const bills = getMonthlyBills(y, m);
+            // Senarai disusun mengikut abjad (A-Z) — termasuk selepas sesuatu bil dibayar/direkod,
+            // supaya senarai kekal konsisten & mudah dicari, bukan ikut urutan bila ia direkod.
+            const bills = getMonthlyBills(y, m).slice().sort((a, b) => a.text.localeCompare(b.text, 'ms', { sensitivity: 'base' }));
             const total = bills.reduce((s, t) => s + t.amount, 0);
             const totalEl = document.getElementById('bill-reminder-total');
             if (totalEl) totalEl.innerText = total.toFixed(2);
 
             // Bil yang pernah dibayar sebelum ini tapi BELUM direkod bulan yang dipapar sekarang
             const paidNames = new Set(bills.map(t => t.text.trim().toLowerCase()));
-            const pendingReminders = getKnownBillNamesBefore(y, m).filter(n => !paidNames.has(n.toLowerCase()));
+            const pendingReminders = getKnownBillNamesBefore(y, m)
+                .filter(n => !paidNames.has(n.toLowerCase()))
+                .sort((a, b) => a.localeCompare(b, 'ms', { sensitivity: 'base' }));
 
             const listEl = document.getElementById('bill-reminder-list');
             if (!listEl) return;
@@ -2691,7 +2709,6 @@
         }
 
         let forecastTrendChart = null;
-        const forecastColorPalette = ['#8b5cf6', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#14b8a6', '#64748b'];
 
         function renderForecast() {
             const canvas = document.getElementById('forecastTrendChart');
@@ -2715,7 +2732,7 @@
             } else {
                 listEl.innerHTML = entries.map(([cat, avg], i) => {
                     const pct = totalAvg > 0 ? (avg / totalAvg * 100) : 0;
-                    const color = forecastColorPalette[i % forecastColorPalette.length];
+                    const color = getCategoryColor('expense', cat);
                     return `
                         <div class="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sleek">
                             <div class="flex justify-between items-baseline mb-1.5">
@@ -2778,6 +2795,91 @@
                     }
                 }
             });
+
+            // Kalau graf per-kategori sedang dibuka (expanded), lukis semula sekali supaya sentiasa terkini
+            if (forecastCategoryTrendExpanded) renderForecastCategoryTrend();
+        }
+
+        // --- Graf linear per kategori: trend SETIAP perbelanjaan setiap bulan — boleh expand/hide ---
+        let forecastCategoryTrendChart = null;
+        let forecastCategoryTrendExpanded = false;
+
+        function toggleForecastCategoryTrend() {
+            forecastCategoryTrendExpanded = !forecastCategoryTrendExpanded;
+            const wrap = document.getElementById('forecast-category-trend-wrap');
+            const icon = document.getElementById('forecast-cat-trend-toggle-icon');
+            const label = document.getElementById('forecast-cat-trend-toggle-label');
+            if (wrap) wrap.classList.toggle('hidden', !forecastCategoryTrendExpanded);
+            if (icon) icon.classList.toggle('rotate-180', forecastCategoryTrendExpanded);
+            if (label) label.childNodes[0].textContent = forecastCategoryTrendExpanded ? 'Hide ' : 'Expand ';
+            if (forecastCategoryTrendExpanded) renderForecastCategoryTrend();
+        }
+
+        function renderForecastCategoryTrend() {
+            const canvas = document.getElementById('forecastCategoryTrendChart');
+            const legendEl = document.getElementById('forecast-category-trend-legend');
+            if (!canvas) return;
+
+            const { monthsData } = getForecastCategoryAverages();
+            const labels = monthsData.map(m => monthNames[m.month]);
+
+            // Kumpul semua kategori yang wujud merentasi bulan-bulan ini
+            const allCats = new Set();
+            monthsData.forEach(m => Object.keys(m.catTotals).forEach(c => allCats.add(c)));
+
+            if (forecastCategoryTrendChart) { forecastCategoryTrendChart.destroy(); forecastCategoryTrendChart = null; }
+
+            if (allCats.size === 0) {
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                if (legendEl) legendEl.innerHTML = '<p class="text-[10px] text-slate-400">Tiada data perbelanjaan untuk dipaparkan.</p>';
+                return;
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)';
+            const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+            // Guna warna kategori yang sama & konsisten dgn Statistik/Cadangan Ikut Kategori
+            const datasets = [...allCats].map(cat => {
+                const color = getCategoryColor('expense', cat);
+                return {
+                    label: cat,
+                    data: monthsData.map(m => m.catTotals[cat] || 0),
+                    borderColor: color,
+                    backgroundColor: color,
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    borderWidth: 2
+                };
+            });
+
+            forecastCategoryTrendChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: RM ${ctx.parsed.y.toFixed(2)}` } }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: tickColor, font: { family: "'Poppins', sans-serif", size: 10, weight: '600' } } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 }, callback: (v) => 'RM' + v, maxTicksLimit: 5 } }
+                    }
+                }
+            });
+
+            // Legend custom (dot warna + nama kategori) — legend asal Chart.js disembunyikan utk jimat ruang
+            if (legendEl) {
+                legendEl.innerHTML = datasets.map(ds => `
+                    <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${ds.borderColor}"></span>${escapeHtml(ds.label)}
+                    </span>`).join('');
+            }
         }
 
         // Widget mini di Homepage: jumlah cadangan bajet sahaja (info ringkas)
@@ -5078,6 +5180,22 @@
         const expenseColorPalette = ['#f43f5e', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#14b8a6', '#64748b'];
         const incomeColorPalette = ['#10b981', '#0ea5e9', '#8b5cf6', '#f59e0b', '#f43f5e', '#14b8a6', '#64748b'];
 
+        // Warna setiap kategori KEKAL SAMA merentasi bulan/tahun (bukan ikut urutan/susunan data
+        // yang berubah setiap kali render) — sekali kategori diberi warna, ia disimpan & digunakan
+        // semula selama-lamanya, sama ada di carta Statistik, senarai pecahan, atau graf Ramalan Bajet.
+        let categoryColorMap = JSON.parse(localStorage.getItem('poket_category_colors')) || { expense: {}, income: {} };
+        function saveCategoryColorMap() { localStorage.setItem('poket_category_colors', JSON.stringify(categoryColorMap)); }
+        function getCategoryColor(type, name) {
+            const palette = type === 'income' ? incomeColorPalette : expenseColorPalette;
+            if (!categoryColorMap[type]) categoryColorMap[type] = {};
+            if (categoryColorMap[type][name]) return categoryColorMap[type][name];
+            const usedCount = Object.keys(categoryColorMap[type]).length;
+            const color = palette[usedCount % palette.length];
+            categoryColorMap[type][name] = color;
+            saveCategoryColorMap();
+            return color;
+        }
+
         function formatRMShort(v) {
             return v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
@@ -5111,7 +5229,7 @@
 
             container.innerHTML = entries.map(([cat, amt], i) => {
                 const pct = total > 0 ? (amt / total * 100) : 0;
-                const color = colorPalette[i % colorPalette.length];
+                const color = getCategoryColor(type, cat);
                 const isActive = selectedStatCategory[type] === cat;
                 return `
                     <button type="button" class="stat-cat-row w-full flex items-center gap-3 text-left rounded-xl transition-colors ${isActive ? 'bg-slate-50 dark:bg-slate-700/40 -mx-2 px-2 py-1' : ''}" data-type="${type}" data-cat="${escapeHtmlAttr(cat)}">
@@ -5242,7 +5360,7 @@
             const expLabels = Object.keys(expCat).length ? Object.keys(expCat) : ['Tiada Data'];
             const expData = Object.keys(expCat).length ? Object.values(expCat) : [1];
             const expColors = Object.keys(expCat).length
-                ? Object.keys(expCat).map((_, i) => expenseColorPalette[i % expenseColorPalette.length])
+                ? Object.keys(expCat).map(cat => getCategoryColor('expense', cat))
                 : ['#e2e8f0'];
             if (myPieChart) myPieChart.destroy();
             myPieChart = new Chart(document.getElementById('expensePieChart').getContext('2d'), {
@@ -5257,7 +5375,7 @@
             const incLabels = Object.keys(incCat).length ? Object.keys(incCat) : ['Tiada Data'];
             const incData = Object.keys(incCat).length ? Object.values(incCat) : [1];
             const incColors = Object.keys(incCat).length
-                ? Object.keys(incCat).map((_, i) => incomeColorPalette[i % incomeColorPalette.length])
+                ? Object.keys(incCat).map(cat => getCategoryColor('income', cat))
                 : ['#e2e8f0'];
             if (myIncomePieChart) myIncomePieChart.destroy();
             myIncomePieChart = new Chart(document.getElementById('incomePieChart').getContext('2d'), {
