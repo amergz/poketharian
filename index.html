@@ -2240,12 +2240,13 @@
 
             const debtRows = activeDebts.map(d => {
                 const already = salaryCommitments.some(c => c.debtId === d.id);
-                const min = getDebtMin(d);
+                // Guna jumlah SEBENAR dibayar bulan ini (termasuk bayaran tambahan), BUKAN nilai min payment.
+                const paidThisMonth = getDebtPaidThisMonth(d, now.getFullYear(), now.getMonth());
                 return `
                     <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg px-2.5 py-2">
                         <div class="min-w-0">
                             <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate"><i class="fas fa-hand-holding-dollar text-orange-400 text-[9px] mr-1"></i>${escapeHtml(d.name)}</p>
-                            <p class="text-[9px] text-slate-400">Min RM ${min.toFixed(2)}/bln • APR ${d.apr.toFixed(1)}%</p>
+                            <p class="text-[9px] text-slate-400">Dibayar RM ${paidThisMonth.toFixed(2)} bulan ini • APR ${d.apr.toFixed(1)}%</p>
                         </div>
                         <button type="button" onclick="addCommitmentFromDebt(${d.id})" ${already ? 'disabled' : ''}
                             class="flex-shrink-0 px-2.5 py-1.5 rounded-lg text-[9px] font-bold flex items-center gap-1 ${already ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-500' : 'bg-indigo-500 hover:bg-indigo-600 text-white'}">
@@ -2277,7 +2278,10 @@
             if (!debt) return;
             if (salaryCommitments.some(c => c.debtId === debtId)) return;
 
-            salaryCommitments.push({ id: Date.now(), name: debt.name, amount: getDebtMin(debt), debtId: debt.id });
+            // Amaun komitmen ikut jumlah SEBENAR dibayar bulan ini (termasuk bayaran tambahan),
+            // bukan nilai min payment yang ditetapkan pada hutang.
+            const now = new Date();
+            salaryCommitments.push({ id: Date.now(), name: debt.name, amount: getDebtPaidThisMonth(debt, now.getFullYear(), now.getMonth()), debtId: debt.id });
             saveSalaryCommitments();
             renderCommitmentDebtPicker();
             renderSalarySavings();
@@ -2412,7 +2416,20 @@
             if (totalEl) totalEl.innerText = total.toFixed(2);
         }
 
-        function getTotalCommitments() { return salaryCommitments.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0); }
+        // Amaun komitmen sebenar: bagi komitmen yang dipautkan ke hutang (c.debtId), sentiasa kira SEMULA
+        // ikut jumlah SEBENAR dibayar bulan semasa (termasuk bayaran tambahan) — bukan snapshot beku
+        // pada masa ia ditambah. Komitmen manual/bil kekal guna c.amount seperti biasa.
+        function resolveCommitmentAmount(c) {
+            if (c.debtId) {
+                const debt = debts.find(d => d.id === c.debtId);
+                if (debt) {
+                    const now = new Date();
+                    return getDebtPaidThisMonth(debt, now.getFullYear(), now.getMonth());
+                }
+            }
+            return parseFloat(c.amount) || 0;
+        }
+        function getTotalCommitments() { return salaryCommitments.reduce((s, c) => s + resolveCommitmentAmount(c), 0); }
 
         function setSalarySavingsPct(pct) {
             document.getElementById('salary-savings-pct').value = pct;
@@ -2433,9 +2450,9 @@
                 ? '<li class="text-[10px] text-slate-400 text-center py-1.5">Belum ada komitmen ditambah.</li>'
                 : salaryCommitments.map(c => `
                     <li class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg px-2.5 py-1.5">
-                        <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(c.name)}</span>
+                        <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(c.name)}${c.debtId ? ' <span class="text-[8px] font-bold uppercase tracking-wide text-orange-400">(dibayar bulan ini)</span>' : ''}</span>
                         <div class="flex items-center gap-2 flex-shrink-0">
-                            <span class="text-[11px] font-bold text-rose-500">RM ${(parseFloat(c.amount) || 0).toFixed(2)}</span>
+                            <span class="text-[11px] font-bold text-rose-500">RM ${resolveCommitmentAmount(c).toFixed(2)}</span>
                             <button type="button" onclick="removeCommitment(${c.id})" class="w-5 h-5 rounded-full bg-rose-50 dark:bg-rose-500/15 text-rose-500 flex items-center justify-center"><i class="fas fa-minus text-[9px]"></i></button>
                         </div>
                     </li>`).join('');
@@ -2922,6 +2939,15 @@
         function getTotalCurrentBalance() { return debts.reduce((s, d) => s + getDebtCurrentBalance(d), 0); }
         function getTotalMinPayment() { return getActiveDebts().reduce((s, d) => s + getDebtMin(d), 0); }
 
+        // Jumlah SEBENAR dibayar untuk hutang ini pada bulan/tahun tertentu (termasuk bayaran tambahan
+        // yang dibuat bulan itu) — digunakan utk Sasaran Simpanan supaya komitmen ikut bayaran sebenar,
+        // bukan sekadar nilai min payment yang ditetapkan.
+        function getDebtPaidThisMonth(d, year, month) {
+            return getDebtPayments(d)
+                .filter(p => { const pd = parseLocalDateStr(p.date); return pd.getFullYear() === year && pd.getMonth() === month; })
+                .reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        }
+
         function renderDebtPayments() {
             const section = document.getElementById('debt-payment-section');
             if (!section) return;
@@ -2962,6 +2988,8 @@
             renderDebtPayments();
             renderDebtPlan();
             renderHomeDebtPlanWidget();
+            // Komitmen "Dari Pelan Hutang" di Sasaran Simpanan ikut bayaran SEBENAR bulan ini — kemaskini terus.
+            if (typeof renderSalarySavings === 'function') renderSalarySavings();
         }
 
         function deleteDebtPayment(pid) {
@@ -2985,6 +3013,7 @@
             renderDebtPayments();
             renderDebtPlan();
             renderHomeDebtPlanWidget();
+            if (typeof renderSalarySavings === 'function') renderSalarySavings();
         }
 
         /**
@@ -4088,6 +4117,7 @@
                 saveDebts();
                 if (typeof renderDebtPlan === 'function') renderDebtPlan();
                 if (typeof renderHomeDebtPlanWidget === 'function') renderHomeDebtPlanWidget();
+                if (typeof renderSalarySavings === 'function') renderSalarySavings();
                 if (currentEditDebtId) renderDebtPayments();
             }
         }
@@ -4104,6 +4134,7 @@
                 saveDebts();
                 if (typeof renderDebtPlan === 'function') renderDebtPlan();
                 if (typeof renderHomeDebtPlanWidget === 'function') renderHomeDebtPlanWidget();
+                if (typeof renderSalarySavings === 'function') renderSalarySavings();
                 if (currentEditDebtId) renderDebtPayments();
             }
         }
