@@ -3744,7 +3744,9 @@
         function renderHomeDebtPlanWidget() {
             const infoEl = document.getElementById('home-debt-plan-info');
             if (!infoEl) return;
-            const totalBalance = debts.reduce((s, d) => s + d.balance, 0);
+            // PENTING: guna getDebtCurrentBalance() (baki asal - jumlah dibayar), BUKAN d.balance mentah,
+            // supaya widget ini terus update lepas sebarang pembayaran direkod — bukan kekal tunjuk baki asal.
+            const totalBalance = debts.reduce((s, d) => s + getDebtCurrentBalance(d), 0);
             if (debts.length === 0) { infoEl.innerText = 'Tiada hutang direkodkan'; return; }
 
             const monthly = getTotalMinPayment() + debtExtraPayment;
