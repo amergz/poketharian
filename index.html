@@ -2741,24 +2741,38 @@
             // Amaran hanya bila BENAR-BENAR tiada data langsung — 1 bulan data pun sudah cukup untuk ramalan tepat
             document.getElementById('forecast-empty-note').classList.toggle('hidden', activeMonthsCount > 0);
 
-            // Pecahan ikut kategori (susun besar -> kecil)
+            // Pecahan ikut kategori (susun besar -> kecil) — cadangan bajet/bulan
             const entries = Object.entries(catAverages).sort((a, b) => b[1] - a[1]);
             const listEl = document.getElementById('forecast-category-list');
+            // Perbelanjaan SEBENAR bulan SEMASA ikut kategori — utk kawal & pantau supaya tak lebih bajet cadangan
+            const now = new Date();
+            const curMonthCat = getMonthExpenseByCategory(now.getFullYear(), now.getMonth()).catTotals;
             if (entries.length === 0) {
                 listEl.innerHTML = `<p class="text-center text-xs text-slate-400 py-6">Tiada data perbelanjaan untuk dijadikan ramalan.</p>`;
             } else {
                 listEl.innerHTML = entries.map(([cat, avg], i) => {
-                    const pct = totalAvg > 0 ? (avg / totalAvg * 100) : 0;
                     const color = getCategoryColor('expense', cat);
+                    const spent = curMonthCat[cat] || 0;
+                    // Peratus bajet bulan ini yang telah digunakan (bukan sekadar "% drpd jumlah keseluruhan")
+                    const usedPct = avg > 0 ? (spent / avg * 100) : (spent > 0 ? 100 : 0);
+                    const barWidth = Math.min(100, usedPct);
+                    const isOver = usedPct > 100;
+                    const isNear = usedPct >= 80 && usedPct <= 100;
+                    const barColor = isOver ? '#f43f5e' : (isNear ? '#f59e0b' : color);
+                    const pctColor = isOver ? 'text-rose-500' : (isNear ? 'text-amber-500' : 'text-slate-400');
                     return `
                         <div class="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sleek">
                             <div class="flex justify-between items-baseline mb-1.5">
-                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${escapeHtml(cat)}</span>
-                                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap ml-2">RM ${avg.toFixed(2)} / bulan</span>
+                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate flex items-center gap-1">
+                                    ${escapeHtml(cat)}
+                                    ${isOver ? '<i class="fas fa-triangle-exclamation text-rose-500 text-[9px]"></i>' : ''}
+                                </span>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap ml-2">RM ${spent.toFixed(2)} / RM ${avg.toFixed(2)}</span>
                             </div>
                             <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full" style="width:${pct}%; background:${color}"></div>
+                                <div class="h-full rounded-full transition-all" style="width:${barWidth}%; background:${barColor}"></div>
                             </div>
+                            <p class="text-[9px] font-bold mt-1 text-right ${pctColor}">${usedPct.toFixed(0)}% digunakan${isOver ? ' • Melebihi bajet!' : ''}</p>
                         </div>`;
                 }).join('');
             }
