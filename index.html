@@ -1221,6 +1221,18 @@
                             <i class="fas fa-wand-magic-sparkles text-lg"></i>
                         </div>
                     </div>
+
+                    <!-- Progress keseluruhan: jumlah dibelanja bulan ini drpd jumlah cadangan bajet -->
+                    <div class="mt-4">
+                        <div class="flex justify-between items-baseline mb-1.5">
+                            <span class="text-[10px] font-semibold text-violet-100">RM <span id="forecast-total-spent">0.00</span> dibelanja bulan ini</span>
+                            <span id="forecast-total-pct" class="text-[10px] font-extrabold">0%</span>
+                        </div>
+                        <div class="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                            <div id="forecast-total-bar" class="h-full rounded-full bg-white transition-all" style="width:0%"></div>
+                        </div>
+                        <p id="forecast-total-over-note" class="hidden text-[9px] font-bold text-rose-100 mt-1.5"><i class="fas fa-triangle-exclamation mr-1"></i>Sudah melebihi cadangan bajet bulanan!</p>
+                    </div>
                 </div>
 
                 <p id="forecast-empty-note" class="hidden text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl p-3 mb-3">
@@ -2740,6 +2752,19 @@
                 : 'Belum ada data perbelanjaan lagi';
             // Amaran hanya bila BENAR-BENAR tiada data langsung — 1 bulan data pun sudah cukup untuk ramalan tepat
             document.getElementById('forecast-empty-note').classList.toggle('hidden', activeMonthsCount > 0);
+
+            // Progress keseluruhan: jumlah SEBENAR dibelanja bulan SEMASA drpd jumlah cadangan bajet bulanan
+            const nowTotal = new Date();
+            const totalSpentThisMonth = getMonthExpenseByCategory(nowTotal.getFullYear(), nowTotal.getMonth()).total;
+            const totalUsedPct = totalAvg > 0 ? (totalSpentThisMonth / totalAvg * 100) : (totalSpentThisMonth > 0 ? 100 : 0);
+            const totalIsOver = totalUsedPct > 100;
+            document.getElementById('forecast-total-spent').innerText = totalSpentThisMonth.toFixed(2);
+            document.getElementById('forecast-total-pct').innerText = `${totalUsedPct.toFixed(0)}%`;
+            const totalBarEl = document.getElementById('forecast-total-bar');
+            totalBarEl.style.width = `${Math.min(100, totalUsedPct)}%`;
+            totalBarEl.classList.toggle('bg-white', !totalIsOver);
+            totalBarEl.classList.toggle('bg-rose-300', totalIsOver);
+            document.getElementById('forecast-total-over-note').classList.toggle('hidden', !totalIsOver);
 
             // Pecahan ikut kategori (susun besar -> kecil) — cadangan bajet/bulan
             const entries = Object.entries(catAverages).sort((a, b) => b[1] - a[1]);
