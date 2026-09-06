@@ -1233,6 +1233,12 @@
                         </div>
                         <p id="forecast-total-over-note" class="hidden text-[9px] font-bold text-rose-100 mt-1.5"><i class="fas fa-triangle-exclamation mr-1"></i>Sudah melebihi cadangan bajet bulanan!</p>
                     </div>
+
+                    <!-- Baki boleh belanja: cadangan bajet - dah dibelanja bulan ini -->
+                    <div class="mt-3 pt-3 border-t border-white/15 flex items-center justify-between">
+                        <span class="text-[10px] font-semibold text-violet-100">Baki Boleh Belanja</span>
+                        <span id="forecast-remaining-amount" class="text-lg font-extrabold">RM 0.00</span>
+                    </div>
                 </div>
 
                 <p id="forecast-empty-note" class="hidden text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl p-3 mb-3">
@@ -2765,6 +2771,12 @@
             totalBarEl.classList.toggle('bg-white', !totalIsOver);
             totalBarEl.classList.toggle('bg-rose-300', totalIsOver);
             document.getElementById('forecast-total-over-note').classList.toggle('hidden', !totalIsOver);
+
+            // Baki boleh belanja = cadangan bajet bulanan - jumlah dah dibelanja bulan ini (tak boleh negatif dlm paparan)
+            const remainingToSpend = totalAvg - totalSpentThisMonth;
+            const remainingEl = document.getElementById('forecast-remaining-amount');
+            remainingEl.innerText = `RM ${Math.abs(remainingToSpend).toFixed(2)}${remainingToSpend < 0 ? ' lebih' : ''}`;
+            remainingEl.classList.toggle('text-rose-200', remainingToSpend < 0);
 
             // Pecahan ikut kategori (susun besar -> kecil) — cadangan bajet/bulan
             const entries = Object.entries(catAverages).sort((a, b) => b[1] - a[1]);
