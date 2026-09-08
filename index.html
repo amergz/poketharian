@@ -2,8 +2,8 @@
 <html lang="ms" id="html-root">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Poket Harian - Sleek Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Poket Harian</title>
 
     <!-- ============================================ -->
     <!-- PWA: bolehkan "Add to Home Screen" / Install  -->
@@ -139,6 +139,66 @@
         }
         .fade-in-widget { animation: fadeInWidget 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
+
+    <style id="poket-ui-polish">
+        :root { --ui-accent:#4f46e5; --ui-border:#e5e9f3; --ui-surface:#fff; --ui-muted:#eef2ff; }
+        html.dark { --ui-accent:#a5b4fc; --ui-border:#2b3852; --ui-surface:#182338; --ui-muted:#26324b; color-scheme:dark; }
+        body { background:#e9edf7; line-height:1.6; }
+        html.dark body { background:#080f1e; }
+        #app-shell { background:#f5f7fc; box-shadow:0 0 80px #23325514; padding-bottom:calc(120px + env(safe-area-inset-bottom)); }
+        .dark #app-shell { background:#101a2b; }
+        #balance-hero { background:radial-gradient(ellipse at 95% 5%,#9187ff70,transparent 55%),linear-gradient(135deg,#252775,#4f46e5 65%,#6455df); border-radius:0 0 36px 36px; padding-top:30px; }
+        .dark #balance-hero { background:radial-gradient(ellipse at 95% 5%,#6366f150,transparent 60%),linear-gradient(135deg,#18214c,#35347d); }
+        #home-date { font-size:1.25rem; letter-spacing:-.04em; }
+        #home-today-balance { font-variant-numeric:tabular-nums; font-size:clamp(2rem,10vw,3.25rem); overflow-wrap:anywhere; }
+        #balance-hero h2 { margin-bottom:20px; letter-spacing:-.045em; }
+        #balance-hero > .text-center { padding-top:8px; }
+        .neo-card, .tab-content .shadow-sleek { border:1px solid var(--ui-border); box-shadow:0 4px 8px #17255403,0 12px 32px #17255406; }
+        .dark .neo-card, .dark .tab-content .shadow-sleek { border-color:var(--ui-border); box-shadow:0 10px 28px #00000014; }
+        .neo-card { border-radius:24px; }
+        .neo-fab { border:1px solid var(--ui-border); box-shadow:0 6px 20px #4f46e526; }
+        .tab-content > .p-6 { padding-left:20px; padding-right:20px; }
+        .tab-content h2, .tab-content h3 { letter-spacing:-.025em; }
+        .tab-content h3.uppercase { text-transform:none; letter-spacing:0; font-size:.875rem; }
+        input:not([type=checkbox]):not([type=range]):not([type=color]), select, textarea { min-height:44px; font-size:1rem!important; border:1px solid transparent; transition:border-color .2s,box-shadow .2s,background-color .2s; }
+        input:focus,select:focus,textarea:focus { border-color:#818cf8!important; box-shadow:0 0 0 4px #6366f115; }
+        button { transition:background-color .2s,box-shadow .2s,transform .2s,color .2s; }
+        button:focus-visible,[role=button]:focus-visible { outline:3px solid #818cf8; outline-offset:3px; }
+        button:active { transform:scale(.96); }
+        button:disabled { opacity:.5; cursor:not-allowed; }
+        #app-shell nav { left:50%; transform:translateX(-50%); bottom:calc(10px + env(safe-area-inset-bottom)); width:calc(100% - 24px); max-width:424px; border:1px solid var(--ui-border); border-radius:25px; background:#ffffffed; box-shadow:0 8px 32px #27336c1a; padding:9px 8px; gap:2px; }
+        .dark #app-shell nav { background:#182338ed; box-shadow:0 8px 32px #0004; }
+        .nav-item { min-width:0; flex:1; min-height:56px; justify-content:center; border-radius:17px; gap:3px; }
+        .nav-item > span:last-child { font-size:.75rem; line-height:1.2; }
+        .nav-item.active { background:var(--ui-muted); color:var(--ui-accent); }
+        .nav-item.active > i { transform:translateY(-2px); }
+        .nav-item > i { transition:transform .25s; margin:0; font-size:19px; }
+        #nav-home { margin-top:0; padding:8px 0; }
+        #nav-home > span:first-child { width:auto; height:auto; background:none; box-shadow:none; margin:0; }
+        #nav-home i { color:inherit!important; font-size:20px; }
+        #floating-add-btn { right:max(20px,calc((100vw - 448px)/2 + 20px)); bottom:calc(104px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:20px; background:linear-gradient(145deg,#6366f1,#4338ca); box-shadow:0 8px 24px #4f46e548, inset 0 1px 0 #ffffff40; }
+        #floating-add-btn:hover i { transform:rotate(90deg); }
+        #floating-add-btn i { transition:transform .25s; }
+        #calendar-grid > * { transition:background-color .2s,transform .2s,box-shadow .2s; }
+        #calendar-grid > *:active { transform:scale(.9); }
+        #home-transaction-list > *, #full-transaction-list > * { border-radius:20px; }
+        .tab-content.active { animation:pageReveal .32s ease-out; }
+        .ui-enter { animation:cardReveal .38s ease-out both; }
+        .ui-value-update { animation:valueUpdate .4s ease-out; }
+        .ui-ripple { position:fixed; z-index:10000; border-radius:50%; width:32px; height:32px; margin:-16px; background:#818cf83d; pointer-events:none; animation:tapRipple .45s ease-out forwards; }
+        .daily-meter { margin-top:16px; padding:0 3px; }
+        .daily-meter-label { display:flex; justify-content:space-between; gap:12px; font-size:.75rem; color:#e0e7ff; margin-bottom:8px; }
+        .daily-meter-track { height:6px; border-radius:999px; background:#ffffff24; overflow:hidden; }
+        #daily-meter-fill { height:100%; width:0; border-radius:inherit; background:#a5f3fc; transition:width .7s cubic-bezier(.2,.8,.2,1),background-color .3s; }
+        @keyframes pageReveal { from{opacity:.5;transform:translateY(8px)} to{opacity:1;transform:none} }
+        @keyframes cardReveal { from{opacity:.4;transform:translateY(8px)} to{opacity:1;transform:none} }
+        @keyframes valueUpdate { 50%{opacity:.65;transform:translateY(-2px)} }
+        @keyframes tapRipple { to{transform:scale(2);opacity:0} }
+        @media(hover:hover) { .neo-card:hover { box-shadow:0 10px 30px #17255410; } button:hover:not(:disabled) { filter:brightness(1.035); } #calendar-grid > [onclick]:hover { transform:translateY(-2px); } }
+        @media(min-width:600px) { #app-shell { border-left:1px solid var(--ui-border); border-right:1px solid var(--ui-border); } }
+        @media(max-width:360px) { #balance-hero { padding-left:20px;padding-right:20px; } .tab-content > .p-6 { padding-left:14px;padding-right:14px; } .nav-item > span:last-child { font-size:.6875rem; } }
+        @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+    </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased flex justify-center transition-colors duration-300">
 
@@ -146,18 +206,18 @@
     <div id="budget-toast" class="fixed left-1/2 -translate-x-1/2 top-3 z-[999] max-w-[92vw] w-auto px-4 py-2.5 rounded-2xl bg-slate-900/90 dark:bg-slate-700/95 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md opacity-0 pointer-events-none -translate-y-3 transition-all duration-300 whitespace-nowrap"></div>
 
     <!-- Mobile Frame -->
-    <div class="w-full max-w-md min-h-screen relative overflow-x-hidden flex flex-col pb-24 shadow-2xl bg-slate-50 dark:bg-slate-900">
+    <div id="app-shell" class="w-full max-w-md min-h-screen relative overflow-x-hidden flex flex-col pb-24 shadow-2xl bg-slate-50 dark:bg-slate-900">
 
         <!-- ========================================== -->
         <!-- TAB 1: DASHBOARD (Home & Calendar)         -->
         <!-- ========================================== -->
         <div id="tab-home" class="tab-content active w-full">
-            <div class="bg-gradient-to-br from-indigo-600 to-violet-700 dark:from-indigo-900 dark:to-slate-800 rounded-b-[2.5rem] p-7 pb-12 shadow-lg relative overflow-hidden text-white">
+            <div id="balance-hero" class="bg-gradient-to-br from-indigo-600 to-violet-700 dark:from-indigo-900 dark:to-slate-800 rounded-b-[2.5rem] p-7 pb-12 shadow-lg relative overflow-hidden text-white">
                 <div class="absolute -top-20 -right-20 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
                 
                 <div class="flex justify-between items-center mb-6 relative z-10">
                     <div>
-                        <p class="text-indigo-200 text-xs font-medium uppercase tracking-wider mb-0.5">Ringkasan Harian</p>
+                        <p class="text-indigo-200 text-xs font-medium uppercase tracking-wider mb-0.5">POKET HARIAN</p>
                         <h1 class="text-xl font-bold" id="home-date">Hari Ini</h1>
                     </div>
                     <div class="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-right">
@@ -1517,7 +1577,7 @@
         <!-- ========================================== -->
         <!-- BUTANG "+" TERAPUNG (diasingkan dari nav, hanya di tab Home) -->
         <!-- ========================================== -->
-        <button id="floating-add-btn" onclick="prepareNewTx()"
+        <button id="floating-add-btn" aria-label="Tambah transaksi" title="Tambah transaksi" onclick="prepareNewTx()"
             class="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-full flex items-center justify-center text-white text-2xl shadow-glow transform transition hover:scale-105 active:scale-95 z-40">
             <i class="fas fa-plus"></i>
         </button>
@@ -5518,6 +5578,63 @@
         applySavingsTrendUiState();
         renderSavingsAccounts();
         refreshData();
+    </script>
+
+    <script id="poket-ui-interactions">
+    (() => {
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const hero = document.getElementById('balance-hero');
+        const meter = document.createElement('div');
+        meter.className = 'daily-meter relative z-10';
+        meter.innerHTML = '<div class="daily-meter-label"><span>Penggunaan limit harian</span><span id="daily-meter-label"></span></div><div class="daily-meter-track" id="daily-meter" role="progressbar" aria-label="Penggunaan limit harian" aria-valuemin="0" aria-valuemax="100"><div id="daily-meter-fill"></div></div>';
+        hero.appendChild(meter);
+        const amount = id => Number(document.getElementById(id).textContent.replace(/[^0-9.\-]/g, '')) || 0;
+        function updateMeter() {
+            const limit = amount('home-daily-limit');
+            const spent = amount('home-spent-today');
+            const pct = limit > 0 ? Math.max(0,spent / limit * 100) : 0;
+            const fill = document.getElementById('daily-meter-fill');
+            fill.style.width = Math.min(pct,100) + '%';
+            fill.style.backgroundColor = limit <= 0 || pct > 100 ? '#fda4af' : pct >= 80 ? '#fde68a' : '#a5f3fc';
+            const label = limit > 0 ? Math.round(pct) + '% digunakan' : 'Tiada limit tersedia';
+            document.getElementById('daily-meter-label').textContent = label;
+            document.getElementById('daily-meter').setAttribute('aria-valuenow',String(Math.min(pct,100)));
+            document.getElementById('daily-meter').setAttribute('aria-valuetext',label);
+        }
+        ['home-today-balance','home-daily-limit','home-spent-today'].forEach(id => {
+            const el = document.getElementById(id);
+            new MutationObserver(() => {
+                updateMeter();
+                if (!reducedMotion.matches) { el.classList.remove('ui-value-update'); void el.offsetWidth; el.classList.add('ui-value-update'); }
+            }).observe(el,{childList:true,characterData:true,subtree:true});
+        });
+        updateMeter();
+        document.addEventListener('click',event => {
+            const target = event.target.closest('button,[role="button"]');
+            if (!target || target.disabled || reducedMotion.matches || event.detail === 0) return;
+            const dot = document.createElement('span');
+            dot.className='ui-ripple'; dot.style.left=event.clientX+'px'; dot.style.top=event.clientY+'px';
+            dot.setAttribute('aria-hidden','true'); document.body.appendChild(dot);
+            dot.addEventListener('animationend',()=>dot.remove(),{once:true});
+            setTimeout(()=>dot.remove(),600);
+        });
+        document.querySelectorAll('.nav-item').forEach(nav => {
+            function syncNav() { if(nav.classList.contains('active')) nav.setAttribute('aria-current','page'); else nav.removeAttribute('aria-current'); }
+            syncNav(); new MutationObserver(syncNav).observe(nav,{attributes:true,attributeFilter:['class']});
+        });
+        const calendarToggle = document.querySelector('[onclick="toggleCalendarView()"]');
+        calendarToggle.setAttribute('role','button'); calendarToggle.tabIndex=0;
+        calendarToggle.setAttribute('aria-label','Tukar paparan kalendar mingguan atau bulanan');
+        calendarToggle.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();calendarToggle.click();}});
+        const syncCalendar = () => calendarToggle.setAttribute('aria-expanded',String(isCalendarExpanded));
+        syncCalendar(); calendarToggle.addEventListener('click',syncCalendar);
+        document.querySelectorAll('button[onclick="changeCalendarView(-1)"]').forEach(el=>el.setAttribute('aria-label','Tempoh sebelumnya'));
+        document.querySelectorAll('button[onclick="changeCalendarView(1)"]').forEach(el=>el.setAttribute('aria-label','Tempoh seterusnya'));
+        ['home-transaction-list','full-transaction-list'].forEach(id=>{
+            const list=document.getElementById(id);
+            new MutationObserver(records=>{if(reducedMotion.matches)return;records.forEach(record=>Array.from(record.addedNodes).filter(n=>n.nodeType===1).slice(0,8).forEach((node,i)=>{node.classList.add('ui-enter');node.style.animationDelay=Math.min(i*35,175)+'ms';}));}).observe(list,{childList:true});
+        });
+    })();
     </script>
 </body>
 </html>
