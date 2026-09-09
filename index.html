@@ -1781,7 +1781,7 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
             const canvas=chart.canvas;
             canvas.dataset.interactiveLine='true';canvas.tabIndex=0;
             canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Graf '+chart.data.datasets.map(d=>d.label).join(' dan ')+'. Guna anak panah kiri atau kanan untuk nilai.');
-            const state=chart.$poket={index:-1};
+            const state=chart.$poket={index:-1,canvas};
             if(['weeklyTrendChart','savingsTrendChart'].includes(canvas.id)) {
                 const tools=document.createElement('div');tools.className='line-chart-tools';
                 const legend=document.createElement('div');legend.className='line-chart-legend';
@@ -1825,8 +1825,13 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
             chart.canvas.setAttribute('aria-label',text+'. Guna anak panah untuk nilai seterusnya.');
         },
         afterDestroy(chart) {
-            if(!chart.$poket)return;
-            chart.canvas.removeEventListener('keydown',chart.$poket.keyHandler);chart.$poket.tools?.remove();
+            const state=chart.$poket;
+            if(!state)return;
+            // Chart.js clears chart.canvas before afterDestroy. Use the retained element.
+            state.canvas.removeEventListener('keydown',state.keyHandler);
+            state.canvas.removeAttribute('aria-describedby');
+            state.tools?.remove();
+            delete chart.$poket;
         }
     });
     reduce.addEventListener('change',()=>{Object.values(Chart.instances).forEach(chart=>{if(chart.config.type==='line'){chart.options.animation=reduce.matches?false:{duration:650,easing:'easeOutQuart'};chart.update('none');}});});
