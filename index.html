@@ -1443,6 +1443,29 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
                     <i class="fas fa-triangle-exclamation mr-1"></i> Belum ada rekod perbelanjaan sama sekali. Tambah sekurang-kurangnya satu rekod untuk mula dapatkan ramalan bajet.
                 </p>
 
+                <!-- Corak Perbelanjaan: kumulatif/harian drpd sasaran bajet & bulan lepas -->
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-4 mb-6">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-700 dark:text-slate-200">Corak Perbelanjaan</h4>
+                            <p class="text-[10px] text-slate-400">Spending Pattern</p>
+                        </div>
+                        <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl relative flex-shrink-0" id="spending-pattern-track">
+                            <button type="button" onclick="setSpendingPatternMode('cumulative')" id="spending-pattern-btn-cumulative" class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all duration-300">Cumulative</button>
+                            <button type="button" onclick="setSpendingPatternMode('daily')" id="spending-pattern-btn-daily" class="px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all duration-300">Daily</button>
+                        </div>
+                    </div>
+                    <div class="relative h-56 w-full mt-3">
+                        <canvas id="spendingPatternChart"></canvas>
+                    </div>
+                    <p id="spending-pattern-days-label" class="text-center text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-wide"></p>
+                    <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-2">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-400 flex-shrink-0"></span>Bulan Ini</span>
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-3 border-t-2 border-dashed border-slate-400 flex-shrink-0"></span>Bulan Lepas</span>
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400"><span class="w-3 border-t-2 border-amber-500 flex-shrink-0"></span>Sasaran Bajet</span>
+                    </div>
+                </div>
+
                 <!-- Pecahan cadangan bajet ikut kategori -->
                 <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Cadangan Ikut Kategori</h4>
                 <div id="forecast-category-list" class="space-y-3 mb-6"></div>
@@ -2979,6 +3002,27 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
             return { catTotals, total };
         }
 
+        // Bina siri HARIAN (bukan kumulatif) perbelanjaan sebenar utk satu bulan — index 0 = hari 1.
+        // Digunakan oleh carta "Corak Perbelanjaan" (Cumulative/Daily) supaya boleh tukar mod tanpa kira semula.
+        function getDailyExpenseSeries(year, month) {
+            const days = new Date(year, month + 1, 0).getDate();
+            const series = new Array(days).fill(0);
+            const prefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+            transactions.forEach(t => {
+                if (t.type !== 'expense') return;
+                if (!t.date.startsWith(prefix)) return;
+                const day = parseInt(t.date.slice(8, 10), 10);
+                if (day >= 1 && day <= days) series[day - 1] += t.amount;
+            });
+            return series;
+        }
+
+        // Tukar siri harian -> kumulatif (running total sepanjang bulan)
+        function toCumulativeSeries(dailySeries) {
+            let sum = 0;
+            return dailySeries.map(v => (sum += v));
+        }
+
         // Purata perbelanjaan N bulan lepas (SEBELUM bulan semasa), ikut kategori.
         // Kategori yang tak muncul dalam sesetengah bulan dikira sebagai RM0 untuk bulan tu —
         // supaya purata jujur mewakili corak perbelanjaan sebenar (bukan cuma bulan yang ada rekod sahaja).
@@ -3152,6 +3196,173 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
 
             // Kalau graf per-kategori sedang dibuka (expanded), lukis semula sekali supaya sentiasa terkini
             if (forecastCategoryTrendExpanded) renderForecastCategoryTrend();
+
+            // Corak Perbelanjaan (Cumulative/Daily vs Bulan Lepas & Sasaran Bajet)
+            updateSpendingPatternToggleUI();
+            renderSpendingPatternChart();
+        }
+
+        // ==========================================================
+        // CORAK PERBELANJAAN — carta kumulatif/harian: Bulan Ini vs Bulan Lepas vs Sasaran Bajet
+        // (gaya rujukan "Bagetlah": toggle Cumulative/Daily, garis sasaran bajet, penanda "hari ini")
+        // ==========================================================
+        let spendingPatternChart = null;
+        let spendingPatternMode = localStorage.getItem('poket_spending_pattern_mode') || 'cumulative';
+
+        function setSpendingPatternMode(mode) {
+            spendingPatternMode = mode === 'daily' ? 'daily' : 'cumulative';
+            localStorage.setItem('poket_spending_pattern_mode', spendingPatternMode);
+            updateSpendingPatternToggleUI();
+            renderSpendingPatternChart();
+        }
+
+        function updateSpendingPatternToggleUI() {
+            const btnC = document.getElementById('spending-pattern-btn-cumulative');
+            const btnD = document.getElementById('spending-pattern-btn-daily');
+            if (!btnC || !btnD) return; // modal tak dibuka lagi / elemen belum wujud
+            const isDaily = spendingPatternMode === 'daily';
+            const activeCls = 'px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all duration-300 bg-emerald-500 text-white shadow-sm';
+            const idleCls = 'px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all duration-300 text-slate-500 dark:text-slate-400';
+            btnC.className = !isDaily ? activeCls : idleCls;
+            btnD.className = isDaily ? activeCls : idleCls;
+        }
+
+        function renderSpendingPatternChart() {
+            const canvas = document.getElementById('spendingPatternChart');
+            if (!canvas) return;
+
+            const now = new Date();
+            const curYear = now.getFullYear(), curMonth = now.getMonth(), curDay = now.getDate();
+            const prevRef = new Date(curYear, curMonth - 1, 1);
+            const prevYear = prevRef.getFullYear(), prevMonth = prevRef.getMonth();
+
+            const daysInCur = new Date(curYear, curMonth + 1, 0).getDate();
+            const dailyCur = getDailyExpenseSeries(curYear, curMonth);
+            const dailyPrev = getDailyExpenseSeries(prevYear, prevMonth);
+
+            const { totalAvg } = getForecastCategoryAverages();
+            const isCumulative = spendingPatternMode === 'cumulative';
+            const curFull = isCumulative ? toCumulativeSeries(dailyCur) : dailyCur;
+            const prevFull = isCumulative ? toCumulativeSeries(dailyPrev) : dailyPrev;
+
+            // Label paksi-x = nombor hari 1..bilangan hari bulan semasa
+            const labels = Array.from({ length: daysInCur }, (_, i) => i + 1);
+
+            // Bulan Ini: hanya sampai HARI INI — null selepas itu supaya garis berhenti tepat (bukan jatuh ke 0)
+            const curData = labels.map((d, i) => (d <= curDay ? curFull[i] : null));
+            // Bulan Lepas: sepanjang bulan (data sejarah penuh) utk perbandingan corak
+            const prevData = labels.map((d, i) => (i < prevFull.length ? prevFull[i] : null));
+            // Sasaran Bajet: kumulatif guna jumlah cadangan penuh, harian guna purata sehari
+            const budgetValue = isCumulative ? totalAvg : (daysInCur > 0 ? totalAvg / daysInCur : 0);
+            const budgetData = labels.map(() => budgetValue);
+
+            const curDayIdx = Math.min(curDay, daysInCur) - 1;
+            const currentValue = curFull[curDayIdx] || 0;
+
+            // Tick jarang spt rujukan (1, 8, 15, 22, hujung bulan) — data titik penuh tetap dikekalkan
+            const tickDays = [1, 8, 15, 22, daysInCur].filter((d, i, arr) => d <= daysInCur && arr.indexOf(d) === i);
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)';
+            const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+            if (spendingPatternChart) { spendingPatternChart.destroy(); spendingPatternChart = null; }
+
+            spendingPatternChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Sasaran Bajet',
+                            data: budgetData,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHitRadius: 0,
+                            fill: false,
+                            tension: 0,
+                            order: 3
+                        },
+                        {
+                            label: 'Bulan Lepas',
+                            data: prevData,
+                            borderColor: '#94a3b8',
+                            backgroundColor: 'transparent',
+                            borderDash: [6, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.3,
+                            spanGaps: false,
+                            order: 2
+                        },
+                        {
+                            label: 'Bulan Ini',
+                            data: curData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.18)',
+                            borderWidth: 3,
+                            pointRadius: (ctx) => (ctx.dataIndex === curDayIdx ? 5 : 0),
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#10b981',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            fill: isCumulative ? 'origin' : false,
+                            tension: 0.3,
+                            spanGaps: false,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 26 } },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            filter: (item) => item.raw !== null && item.raw !== undefined,
+                            callbacks: { label: (ctx) => ` ${ctx.dataset.label}: RM ${ctx.parsed.y.toFixed(2)}` }
+                        },
+                        datalabels: {
+                            display: (ctx) => ctx.datasetIndex === 2 && ctx.dataIndex === curDayIdx,
+                            align: 'top',
+                            offset: 6,
+                            backgroundColor: isDark ? 'rgba(16,185,129,0.22)' : 'rgba(16,185,129,0.14)',
+                            borderColor: '#10b981',
+                            borderWidth: 1.5,
+                            borderRadius: 8,
+                            padding: { top: 4, bottom: 4, left: 8, right: 8 },
+                            color: isDark ? '#6ee7b7' : '#047857',
+                            font: { family: "'Poppins', sans-serif", weight: '800', size: 10 },
+                            formatter: () => `Sekarang: RM ${currentValue.toFixed(2)}`
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: tickColor,
+                                font: { family: "'Poppins', sans-serif", size: 10, weight: '600' },
+                                autoSkip: false,
+                                callback: (val, idx) => (tickDays.includes(labels[idx]) ? labels[idx] : '')
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: { color: tickColor, font: { size: 9 }, callback: (v) => 'RM' + v, maxTicksLimit: 5 }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            const labelEl = document.getElementById('spending-pattern-days-label');
+            if (labelEl) labelEl.innerText = `Hari dalam ${monthNames[curMonth]} ${curYear}`;
         }
 
         // --- Graf linear per kategori: trend SETIAP perbelanjaan setiap bulan — boleh expand/hide ---
