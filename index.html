@@ -175,7 +175,7 @@
         .nav-item > i { transition:transform .25s; margin:0; font-size:19px; }
         #nav-home { margin-top:0; padding:8px 0; }
         #nav-home > span:first-child { width:auto; height:auto; background:none; box-shadow:none; margin:0; }
-        #nav-home i { color:inherit!important; font-size:20px; }
+        #nav-home i { color:inherit!important; font-size:24px; }
         #floating-add-btn { right:max(20px,calc((100vw - 448px)/2 + 20px)); bottom:calc(104px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:20px; background:linear-gradient(145deg,#6366f1,#4338ca); box-shadow:0 8px 24px #4f46e548, inset 0 1px 0 #ffffff40; }
         #floating-add-btn:hover i { transform:rotate(90deg); }
         #floating-add-btn i { transition:transform .25s; }
@@ -254,7 +254,7 @@ html[data-palette]:not([data-palette="default"]) .text-white [class*="text-slate
 <script id="poket-palette-boot">
 (() => {
     let palette='default';
-    try { const saved=localStorage.getItem('poket_palette'); if(['default','cosmic','night','autumn'].includes(saved)) palette=saved;
+    try { const saved=localStorage.getItem('poket_palette'); if(['default','cosmic','night','autumn','glass','pop'].includes(saved)) palette=saved;
         document.documentElement.classList.toggle('dark',localStorage.getItem('poket_theme')==='dark');
     } catch (_) {}
     document.documentElement.dataset.palette=palette;
@@ -295,6 +295,168 @@ html[data-palette="default"] { --p-surface:#fff; --p-soft:#eef2ff; --p-line:#e5e
 html.dark[data-palette="default"] { --p-surface:#182338; --p-soft:#26324b; --p-line:#2b3852; --p-accent:#a5b4fc; --p-solid:#4f46e5; --p-ink:#f1f5f9; --p-muted:#94a3b8; --p-hero-a:#18214c; }
 .palette-default { background:linear-gradient(135deg,#4f46e5,#8b5cf6); }
 @media(max-width:360px) { #palette-settings .palette-options { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+</style>
+<style id="poket-glass-theme">
+html[data-palette="glass"] {
+  --p-page: #eef2ff;
+  --p-outer: #e0e7ff;
+  --p-surface: rgba(255, 255, 255, 0.72);
+  --p-soft: rgba(238, 242, 255, 0.8);
+  --p-line: rgba(255, 255, 255, 0.4);
+  --p-accent: #6366f1;
+  --p-solid: #818cf8;
+  --p-deep: #4338ca;
+  --p-hero-a: #312e81;
+  --p-hero-b: #6366f1;
+  --p-ink: #1e1b4b;
+  --p-muted: #6366f1;
+}
+html.dark[data-palette="glass"] {
+  --p-page: #0a0e27;
+  --p-outer: #05071a;
+  --p-surface: rgba(30, 27, 75, 0.72);
+  --p-soft: rgba(49, 46, 129, 0.5);
+  --p-line: rgba(165, 180, 252, 0.15);
+  --p-accent: #a5b4fc;
+  --p-solid: #818cf8;
+  --p-deep: #4338ca;
+  --p-hero-a: #1e1b4b;
+  --p-hero-b: #4338ca;
+  --p-ink: #e0e7ff;
+  --p-muted: #a5b4fc;
+}
+.palette-glass {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(165, 180, 252, 0.4), rgba(255, 255, 255, 0.8));
+  backdrop-filter: blur(10px);
+}
+
+/* PENTING: Untuk Glossy Glass, paksa glass effect pada semua card */
+html[data-palette="glass"] .neo-card,
+html[data-palette="glass"] .shadow-sleek,
+html[data-palette="glass"] nav,
+html[data-palette="glass"] #app-shell nav {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 32px rgba(99, 102, 241, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Latar belakang berwarna di belakang kad supaya kesan kaca (blur) benar-benar kelihatan */
+html[data-palette="glass"] #app-shell {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(129, 140, 248, 0.35), transparent 42%),
+    radial-gradient(circle at 92% 30%, rgba(236, 72, 153, 0.16), transparent 40%),
+    radial-gradient(circle at 25% 85%, rgba(56, 189, 248, 0.2), transparent 45%),
+    var(--p-page) !important;
+}
+html.dark[data-palette="glass"] #app-shell {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(99, 102, 241, 0.28), transparent 42%),
+    radial-gradient(circle at 92% 30%, rgba(168, 85, 247, 0.14), transparent 40%),
+    radial-gradient(circle at 25% 85%, rgba(14, 165, 233, 0.12), transparent 45%),
+    var(--p-page) !important;
+}
+
+/* 5 pilihan tema: susun 3 lajur (3 + 2) supaya nama tema tidak terhimpit */
+#palette-settings .palette-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 360px) { #palette-settings .palette-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+<style id="poket-pop-theme">
+/* =====================================================================
+   TEMA "CERIA POP" — gaya color-block: lime + pastel, teks hitam tebal,
+   pill hitam utk pilihan aktif. CSS sahaja: ubah rupa elemen sedia ada
+   di SEMUA page, tiada elemen/ciri baharu.
+   ===================================================================== */
+html[data-palette="pop"] {
+  --p-page:#f3f2ee; --p-outer:#e6e5df; --p-surface:#ffffff; --p-soft:#efeee8; --p-line:#e4e2da;
+  --p-accent:#12140f; --p-solid:#12140f; --p-deep:#000000; --p-hero-a:#d9f24a; --p-hero-b:#c8e63a;
+  --p-ink:#12140f; --p-muted:#6b6d63;
+  --pop-lime:#d9f24a; --pop-sky:#cde6f3; --pop-mint:#c8f1d9; --pop-lilac:#e1d9ff; --pop-peach:#ffd8c4; --pop-ink:#12140f;
+}
+html.dark[data-palette="pop"] {
+  --p-page:#111210; --p-outer:#0a0a09; --p-surface:#1c1d1a; --p-soft:#272924; --p-line:#30322c;
+  --p-accent:#d9f24a; --p-solid:#d9f24a; --p-deep:#aac21f; --p-hero-a:#12140f; --p-hero-b:#1c1d1a;
+  --p-ink:#f2f3ec; --p-muted:#a3a597;
+}
+.palette-pop { background:linear-gradient(135deg,#12140f 0 28%,#d9f24a 28% 68%,#cde6f3 68%); }
+
+/* --- Tipografi & bentuk kad (semua page) --- */
+html[data-palette="pop"] .tab-content h2.text-2xl { font-size:1.75rem; font-weight:800; letter-spacing:-.035em; }
+html[data-palette="pop"] .tab-content .uppercase.tracking-wider { font-weight:800; letter-spacing:.12em; }
+html[data-palette="pop"] .rounded-3xl { border-radius:28px; }
+html[data-palette="pop"] .rounded-2xl { border-radius:20px; }
+html[data-palette="pop"] body .tab-content .shadow-sleek[class],
+html[data-palette="pop"] body .tab-content .neo-card[class] { border-color:transparent!important; box-shadow:0 16px 32px -22px rgba(18,20,15,.5); }
+html.dark[data-palette="pop"] body .tab-content .shadow-sleek[class],
+html.dark[data-palette="pop"] body .tab-content .neo-card[class] { box-shadow:0 16px 32px -22px rgba(0,0,0,.9); }
+
+/* Kad graf trend (Prestasi Mingguan, Trend Simpanan) jadi blok biru pastel */
+html[data-palette="pop"] body .tab-content .neo-card[class] { background-color:var(--pop-sky)!important; }
+html.dark[data-palette="pop"] body .tab-content .neo-card[class] { background-color:#17313d!important; }
+
+/* --- Hero dashboard: lime terang, teks hitam (cerah & gelap) ---
+   Nota: :not(.pop-a):not(.pop-b) sengaja ditambah untuk naikkan spesifisiti
+   supaya mengatasi rule palet umum (#balance-hero [class*="text-indigo-"]). */
+html[data-palette="pop"] body #balance-hero[class] { background:var(--pop-lime,#d9f24a)!important; box-shadow:0 18px 36px -24px rgba(18,20,15,.6); }
+html[data-palette="pop"]:not(.pop-a):not(.pop-b) #balance-hero * { color:#12140f!important; }
+html[data-palette="pop"]:not(.pop-a):not(.pop-b) #balance-hero .text-rose-300 { color:#be123c!important; }
+html[data-palette="pop"]:not(.pop-a):not(.pop-b) #balance-hero .bg-white\/20 { background:#12140f!important; border-color:transparent!important; }
+html[data-palette="pop"]:not(.pop-a):not(.pop-b) #balance-hero .bg-white\/20 * { color:#ffffff!important; }
+html[data-palette="pop"] #balance-hero .bg-white\/10 { background:rgba(255,255,255,.55)!important; border-color:transparent!important; }
+html[data-palette="pop"] #balance-hero .border-white\/10 { border-color:rgba(18,20,15,.12)!important; }
+html[data-palette="pop"] #balance-hero #home-today-balance { font-weight:800; letter-spacing:-.04em; }
+html[data-palette="pop"] .daily-meter-track { background:rgba(18,20,15,.14); }
+html[data-palette="pop"] #daily-meter-fill { background-color:#12140f!important; }
+html[data-palette="pop"] #daily-meter-fill[style*="253, 230, 138"] { background-color:#b45309!important; }
+html[data-palette="pop"] #daily-meter-fill[style*="253, 164, 175"] { background-color:#e11d48!important; }
+
+/* --- Kad gradient sedia ada (status, simpanan, hutang, pasang app) jadi blok pastel --- */
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"].text-white:not(#balance-hero) { background:var(--pop-lilac)!important; box-shadow:none; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"][class*="from-slate-"].text-white { background:var(--pop-lime)!important; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"][class*="from-emerald-"].text-white { background:var(--pop-mint)!important; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"][class*="from-indigo-"].text-white { background:var(--pop-sky)!important; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"][class*="from-rose-"].text-white { background:var(--pop-peach)!important; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"].text-white:not(#balance-hero),
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"].text-white:not(#balance-hero) * { color:#12140f!important; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"].text-white:not(#balance-hero) :is(.bg-white\/10,.bg-white\/15,.bg-white\/20) { background:rgba(255,255,255,.55)!important; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"].text-white:not(#balance-hero) .bg-white { background:#12140f!important; }
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"].text-white:not(#balance-hero) .bg-white,
+html[data-palette="pop"] body :is(.tab-content,[id$="-modal"]) [class*="bg-gradient-to-"].text-white:not(#balance-hero) .bg-white * { color:#ffffff!important; }
+
+/* --- Pilihan aktif = pill hitam (cerah) / pill lime (gelap) --- */
+html[data-palette="pop"]:not(.dark) body .bg-slate-200\/50 > button.bg-white.bg-white { background:#12140f!important; color:#ffffff!important; box-shadow:0 6px 14px -6px rgba(0,0,0,.45); }
+html.dark[data-palette="pop"] body .bg-slate-200\/50 > button.dark\:bg-slate-700 { background:#d9f24a!important; color:#12140f!important; }
+html.dark[data-palette="pop"] body :is(.bg-indigo-600,.bg-indigo-500,.dark\:bg-indigo-600) { background-color:#d9f24a!important; color:#12140f!important; }
+html.dark[data-palette="pop"] body :is(.bg-indigo-600,.bg-indigo-500,.dark\:bg-indigo-600) :is(.text-white,span,i) { color:#12140f!important; }
+html[data-palette="pop"] .border-indigo-500 { border-color:var(--p-accent)!important; }
+
+/* --- Navigasi bawah & butang tambah --- */
+html[data-palette="pop"] #app-shell nav { border-radius:24px 24px 0 0; box-shadow:0 -10px 30px -20px rgba(18,20,15,.4); }
+html[data-palette="pop"] body .nav-item.active:not(#nav-home) { background:var(--pop-lime,#d9f24a); color:#12140f; border-radius:16px; }
+html[data-palette="pop"] body #nav-home.active { background:transparent; }
+html[data-palette="pop"] #nav-home { padding:0 0 6px; }
+html[data-palette="pop"] #nav-home > span:first-child { width:50px; height:50px; border-radius:18px; margin-top:-18px; background:#12140f!important; box-shadow:0 10px 20px -10px rgba(18,20,15,.7),0 0 0 4px var(--p-surface); }
+html[data-palette="pop"] #nav-home > span:first-child i { color:#d9f24a!important; font-size:24px; }
+html.dark[data-palette="pop"] #nav-home > span:first-child { background:#d9f24a!important; }
+html.dark[data-palette="pop"] #nav-home > span:first-child i { color:#12140f!important; }
+html[data-palette="pop"] body #floating-add-btn[class] { background:#d9f24a!important; color:#12140f!important; box-shadow:0 12px 24px -8px rgba(18,20,15,.55),0 0 0 4px var(--p-page); }
+html[data-palette="pop"] body #floating-add-btn[class] * { color:#12140f!important; }
+
+/* --- Interaktif: kad "tenggelam" sedikit bila ditekan, isi page muncul berperingkat --- */
+html[data-palette="pop"] .tab-content :is(.shadow-sleek,.neo-card):not(:has(input,select,textarea,canvas)) { transition:transform .18s ease,box-shadow .18s ease; }
+html[data-palette="pop"] .tab-content :is(.shadow-sleek,.neo-card):not(:has(input,select,textarea,canvas)):active { transform:scale(.985); }
+html[data-palette="pop"] .tab-content.active > div > * { animation:popRise .45s cubic-bezier(.2,.8,.2,1) backwards; }
+html[data-palette="pop"] .tab-content.active > div > *:nth-child(2) { animation-delay:.05s; }
+html[data-palette="pop"] .tab-content.active > div > *:nth-child(3) { animation-delay:.1s; }
+html[data-palette="pop"] .tab-content.active > div > *:nth-child(4) { animation-delay:.15s; }
+html[data-palette="pop"] .tab-content.active > div > *:nth-child(n+5) { animation-delay:.2s; }
+@keyframes popRise { from { opacity:0; transform:translateY(12px); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-palette="pop"] .tab-content.active > div > * { animation:none; }
+  html[data-palette="pop"] .tab-content :is(.shadow-sleek,.neo-card) { transition:none; }
+}
 </style>
 <style id="animated-graph-ui">
 .nav-item.active i { animation:navIconPop .5s cubic-bezier(.2,.8,.3,1); }
@@ -375,7 +537,7 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
 
             <!-- Kalendar & Transaksi Pilihan -->
             <div class="p-6 -mt-6 relative z-20">
-                
+
                 <!-- Kalendar Interaktif -->
                 <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-5 mb-6 border border-slate-100 dark:border-slate-700/50">
                     
@@ -780,7 +942,7 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
                         <div class="profile-settings-clip"><div class="profile-settings-inner">
 <fieldset class="palette-settings" id="palette-settings">
 <legend>Tema Aplikasi</legend><p class="palette-help">Pilih warna kegemaran anda. Setiap tema menyokong mod cerah dan gelap.</p>
-<div class="palette-options"><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="default" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-default" aria-hidden="true"></span><span><span class="palette-name">Default</span><span class="palette-caption">Warna asal indigo dan violet</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="cosmic" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-cosmic" aria-hidden="true"></span><span><span class="palette-name">Cosmic Beauty</span><span class="palette-caption">Ungu kosmik dengan sentuhan magenta</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="night" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-night" aria-hidden="true"></span><span><span class="palette-name">Star at Night</span><span class="palette-caption">Biru malam dengan aksen biru ais</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="autumn" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-autumn" aria-hidden="true"></span><span><span class="palette-name">Autumn Color</span><span class="palette-caption">Jingga hangat dengan tona amber</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label></div><p id="palette-save-status" role="status" aria-live="polite">Pilihan tema disimpan secara automatik pada peranti ini.</p></fieldset>                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2">
+<div class="palette-options"><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="default" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-default" aria-hidden="true"></span><span><span class="palette-name">Default</span><span class="palette-caption">Warna asal indigo dan violet</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="cosmic" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-cosmic" aria-hidden="true"></span><span><span class="palette-name">Cosmic Beauty</span><span class="palette-caption">Ungu kosmik dengan sentuhan magenta</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="night" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-night" aria-hidden="true"></span><span><span class="palette-name">Star at Night</span><span class="palette-caption">Biru malam dengan aksen biru ais</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="autumn" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-autumn" aria-hidden="true"></span><span><span class="palette-name">Autumn Color</span><span class="palette-caption">Jingga hangat dengan tona amber</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="glass" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-glass" aria-hidden="true"></span><span><span class="palette-name">Glossy Glass</span><span class="palette-caption">Kaca lutsinar dengan kilauan indigo</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label><label class="palette-option"><input class="palette-radio" type="radio" name="app-palette" value="pop" onchange="selectAppPalette(this.value)"><span class="palette-card"><span class="palette-swatch palette-pop" aria-hidden="true"></span><span><span class="palette-name">Ceria Pop</span><span class="palette-caption">Lime ceria, kad pastel &amp; teks tebal</span></span><span class="palette-check" aria-hidden="true">✓</span></span></label></div><p id="palette-save-status" role="status" aria-live="polite">Pilihan tema disimpan secara automatik pada peranti ini.</p></fieldset>                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sleek p-2">
                     <div class="p-4 flex items-center justify-between">
                         <div class="flex items-center space-x-3">
                             <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300">
@@ -6288,7 +6450,7 @@ canvas[data-interactive-line]:focus-visible { outline:2px solid var(--p-accent,#
     })();
     </script>
 <script id="poket-palette-controls">
-const appPaletteNames = { default:'Default', cosmic:'Cosmic Beauty', night:'Star at Night', autumn:'Autumn Color' };
+const appPaletteNames = { default:'Default', cosmic:'Cosmic Beauty', night:'Star at Night', autumn:'Autumn Color', glass:'Glossy Glass', pop:'Ceria Pop' };
 function selectAppPalette(palette) {
     if (!Object.prototype.hasOwnProperty.call(appPaletteNames,palette)) return;
     document.documentElement.dataset.palette=palette;
